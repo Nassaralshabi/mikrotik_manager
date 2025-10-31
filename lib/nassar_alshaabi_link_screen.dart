@@ -5,14 +5,14 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'mqtt_service.dart';
 
-class QahtaniLinkScreen extends StatefulWidget {
-  const QahtaniLinkScreen({super.key});
+class NassarAlShaabiLinkScreen extends StatefulWidget {
+  const NassarAlShaabiLinkScreen({super.key});
 
   @override
-  State<QahtaniLinkScreen> createState() => _QahtaniLinkScreenState();
+  State<NassarAlShaabiLinkScreen> createState() => _NassarAlShaabiLinkScreenState();
 }
 
-class _QahtaniLinkScreenState extends State<QahtaniLinkScreen> {
+class _NassarAlShaabiLinkScreenState extends State<NassarAlShaabiLinkScreen> {
   late MqttService _mqttService;
   StreamSubscription? _mqttSubscription;
 
@@ -53,7 +53,7 @@ class _QahtaniLinkScreenState extends State<QahtaniLinkScreen> {
     final isLinked = prefs.getBool('is_network_linked') ?? false;
 
     if (isLinked) {
-      final dataString = prefs.getString('qahtani_linked_data');
+      final dataString = prefs.getString('nassar_alshaabi_linked_data');
       if (dataString != null && mounted) {
         setState(() {
           _linkedData = jsonDecode(dataString);
@@ -154,7 +154,7 @@ class _QahtaniLinkScreenState extends State<QahtaniLinkScreen> {
   Future<void> _handleSuccess(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_network_linked', true);
-    await prefs.setString('qahtani_linked_data', jsonEncode(data));
+    await prefs.setString('nassar_alshaabi_linked_data', jsonEncode(data));
     if (mounted) {
       setState(() {
         _linkedData = data;
@@ -235,7 +235,7 @@ class _QahtaniLinkScreenState extends State<QahtaniLinkScreen> {
   Future<void> _unlinkAccount() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('is_network_linked');
-    await prefs.remove('qahtani_linked_data');
+    await prefs.remove('nassar_alshaabi_linked_data');
     _resetStateForNewVerification();
     setState(() {
       _isLinked = false;

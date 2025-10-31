@@ -27,7 +27,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
   List<String> _extractedCardNumbers = [];
   List<String> _imagePaths = [];
 
-  // --- State for Al-Qahtani functionality ---
+  // --- State for Nassar AlShaabi functionality ---
   late MqttService _mqttService;
   StreamSubscription? _mqttSubscription;
   bool _isNetworkLinked = false;
@@ -70,13 +70,13 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
     super.dispose();
   }
 
-  // --- Al-Qahtani Methods ---
+  // --- Nassar AlShaabi Methods ---
 
   Future<void> _checkLinkStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final isLinked = prefs.getBool('is_network_linked') ?? false;
     if (isLinked) {
-      final dataString = prefs.getString('qahtani_linked_data');
+      final dataString = prefs.getString('nassar_alshaabi_linked_data');
       if (dataString != null) {
         if (mounted) {
           setState(() {
@@ -145,7 +145,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
     });
   }
 
-  void _showAddCardsToQahtaniDialog(List<String> cards) {
+  void _showAddCardsToNassarAlShaabiDialog(List<String> cards) {
     if (!_isNetworkLinked) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('الشبكة غير مرتبطة بحساب م/نصار الشعبي')),
@@ -184,7 +184,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
               onPressed: () {
                 if (selectedUnitId != null) {
                   Navigator.of(context).pop();
-                  _sendCardsToQahtani(cards, selectedUnitId!);
+                  _sendCardsToNassarAlShaabi(cards, selectedUnitId!);
                 }
               },
             ),
@@ -194,7 +194,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
     );
   }
 
-  void _sendCardsToQahtani(List<String> cards, String selectedUnitId) {
+  void _sendCardsToNassarAlShaabi(List<String> cards, String selectedUnitId) {
       _showWaitingDialog("جاري إرسال الكروت...");
 
       if (mounted) {
@@ -404,7 +404,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
                         ElevatedButton.icon(
                           icon: const Icon(Icons.add_to_queue, size: 16),
                           label: const Text('إضافة لـ م/نصار الشعبي', style: TextStyle(fontSize: 11)),
-                          onPressed: () => _showAddCardsToQahtaniDialog(_extractedCardNumbers),
+                          onPressed: () => _showAddCardsToNassarAlShaabiDialog(_extractedCardNumbers),
                            style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.teal,
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

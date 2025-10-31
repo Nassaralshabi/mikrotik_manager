@@ -16,7 +16,7 @@ import 'add_user_screen.dart';
 import 'bulk_add_screen.dart';
 import 'saved_files_screen.dart';
 import 'mqtt_service.dart';
-import 'qahtani_link_screen.dart';
+import 'nassar_alshaabi_link_screen.dart';
 import 'profile_screen.dart';
 import 'pdf_templates_screen.dart';
 import 'check_user_screen.dart';
@@ -503,13 +503,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final isLinked = prefs.getBool('is_network_linked') ?? false;
       String clientName = '';
       if (isLinked) {
-        final dataString = prefs.getString('qahtani_linked_data');
+        final dataString = prefs.getString('nassar_alshaabi_linked_data');
         if (dataString != null) {
           try {
             final data = jsonDecode(dataString);
             clientName = data['client_info']?['name'] ?? '';
           } catch (e) {
-            print('Error decoding qahtani_linked_data: $e');
+            print('Error decoding nassar_alshaabi_linked_data: $e');
           }
         }
       }
@@ -600,7 +600,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         color: const Color(0xFF42A5F5), // Blue
         onTap: () {
           Navigator.of(context)
-              .push(MaterialPageRoute(builder: (context) => const QahtaniLinkScreen()));
+              .push(MaterialPageRoute(builder: (context) => const NassarAlShaabiLinkScreen()));
         },
       ),
       ServiceItem(

@@ -25,7 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isLinked = prefs.getBool('is_network_linked') ?? false;
 
     if (isLinked) {
-      final dataString = prefs.getString('qahtani_linked_data');
+      final dataString = prefs.getString('nassar_alshaabi_linked_data');
       if (dataString != null) {
         setState(() {
           _profileData = jsonDecode(dataString);

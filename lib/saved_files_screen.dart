@@ -84,7 +84,7 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
     final prefs = await SharedPreferences.getInstance();
     final isLinked = prefs.getBool('is_network_linked') ?? false;
     if (isLinked) {
-      final dataString = prefs.getString('qahtani_linked_data');
+      final dataString = prefs.getString('nassar_alshaabi_linked_data');
       if (dataString != null && mounted) {
         setState(() {
           _isNetworkLinked = true;

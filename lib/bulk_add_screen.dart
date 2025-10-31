@@ -83,7 +83,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
     final prefs = await SharedPreferences.getInstance();
     final isLinked = prefs.getBool('is_network_linked') ?? false;
     if (isLinked) {
-      final dataString = prefs.getString('qahtani_linked_data');
+      final dataString = prefs.getString('nassar_alshaabi_linked_data');
       if (dataString != null) {
         setState(() {
           _isNetworkLinked = true;
@@ -317,7 +317,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                       label: const Text('إضافة لـ م/نصار الشعبي'),
                       onPressed: () {
                         Navigator.of(context).pop();
-                        _showAddCardsToQahtaniDialog(users);
+                        _showAddCardsToNassarAlShaabiDialog(users);
                       },
                       style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.teal),
@@ -332,7 +332,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
       );
   }
 
-  void _showAddCardsToQahtaniDialog(List<Map<String, String>> cards) {
+  void _showAddCardsToNassarAlShaabiDialog(List<Map<String, String>> cards) {
     String? selectedUnitId;
     final units = (_linkedData['network_details']?['units'] as List?) ?? [];
 
@@ -364,7 +364,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
               onPressed: () {
                 if (selectedUnitId != null) {
                   Navigator.of(context).pop();
-                  _sendCardsToQahtani(cards, selectedUnitId!);
+                  _sendCardsToNassarAlShaabi(cards, selectedUnitId!);
                 }
               },
             ),
@@ -374,7 +374,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
     );
   }
 
-  void _sendCardsToQahtani(List<Map<String, String>> cards, String selectedUnitId) {
+  void _sendCardsToNassarAlShaabi(List<Map<String, String>> cards, String selectedUnitId) {
       _showWaitingDialog("جاري إرسال الكروت...");
 
       setState(() {

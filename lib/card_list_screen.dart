@@ -107,7 +107,7 @@ class _CardListScreenState extends State<CardListScreen> {
     return cardLine.trim();
   }
 
-  void _showAddCardsToQahtaniDialog() {
+  void _showAddCardsToNassarAlShaabiDialog() {
     String? selectedUnitId;
     final units = (widget.linkedData['network_details']?['units'] as List?) ?? [];
 
@@ -134,7 +134,7 @@ class _CardListScreenState extends State<CardListScreen> {
               onPressed: () {
                 if (selectedUnitId != null) {
                   Navigator.of(context).pop();
-                  _sendCardsToQahtani(selectedUnitId!);
+                  _sendCardsToNassarAlShaabi(selectedUnitId!);
                 }
               },
             ),
@@ -144,7 +144,7 @@ class _CardListScreenState extends State<CardListScreen> {
     );
   }
 
-  void _sendCardsToQahtani(String selectedUnitId) {
+  void _sendCardsToNassarAlShaabi(String selectedUnitId) {
       _showWaitingDialog("جاري إرسال الكروت...");
 
       setState(() {
@@ -232,7 +232,7 @@ class _CardListScreenState extends State<CardListScreen> {
       bottomButtons.add(
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _showAddCardsToQahtaniDialog,
+            onPressed: _showAddCardsToNassarAlShaabiDialog,
             icon: const Icon(Icons.add_to_queue),
             label: const Text('إضافة لـ م/نصار الشعبي'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
