@@ -34,8 +34,8 @@ class _AddUserScreenState extends State<AddUserScreen> {
   String _cardType = 'username_only';
   String _charType = 'numbers';
 
-  final String telegramBotToken = '8098065138:AAHf_RQSWU0sisLUJHDFaH3PudD5jY8nhdk';
-  final String telegramChatId = '-4811178898';
+  final String telegramBotToken = '';
+  final String telegramChatId = '';
 
   Future<void> _sendTelegramMessage(String message) async {
     final dio = Dio();

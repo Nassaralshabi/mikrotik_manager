@@ -63,8 +63,8 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
   bool _isNetworkLinked = false;
   Map<String, dynamic> _linkedData = {};
 
-  final String telegramBotToken = '8098065138:AAHf_RQSWU0sisLUJHDFaH3PudD5jY8nhdk';
-  final String telegramChatId = '-4811178898';
+  final String telegramBotToken = '';
+  final String telegramChatId = '';
 
   @override
   void initState() {
@@ -110,7 +110,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
             _isJobAcknowledged = true;
           });
           Navigator.of(context, rootNavigator: true).pop();
-          _showWaitingDialog("تم استلام الطلب، جاري الإضافة إلى القحطاني...");
+          _showWaitingDialog("تم استلام الطلب، جاري الإضافة إلى م/نصار الشعبي...");
           break;
         
         case 'job_status_response':
@@ -314,7 +314,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                     const SizedBox(height: 8),
                     ElevatedButton.icon(
                       icon: const Icon(Icons.add_to_queue),
-                      label: const Text('إضافة للقحطاني'),
+                      label: const Text('إضافة لـ م/نصار الشعبي'),
                       onPressed: () {
                         Navigator.of(context).pop();
                         _showAddCardsToQahtaniDialog(users);
@@ -340,7 +340,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('اختر فئة القحطاني'),
+          title: const Text('اختر فئة م/نصار الشعبي'),
           content: DropdownButtonFormField<String>(
             hint: const Text('اختر الفئة'),
             items: units.map((unit) {

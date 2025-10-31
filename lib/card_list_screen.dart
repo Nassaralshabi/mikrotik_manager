@@ -65,7 +65,7 @@ class _CardListScreenState extends State<CardListScreen> {
           _addCardsTimer?.cancel();
           setState(() => _isJobAcknowledged = true);
           Navigator.of(context, rootNavigator: true).pop();
-          _showWaitingDialog("تم استلام الطلب، جاري الإضافة إلى القحطاني...");
+          _showWaitingDialog("تم استلام الطلب، جاري الإضافة إلى م/نصار الشعبي...");
           break;
         
         case 'job_status_response':
@@ -115,7 +115,7 @@ class _CardListScreenState extends State<CardListScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('اختر فئة القحطاني'),
+          title: const Text('اختر فئة م/نصار الشعبي'),
           content: DropdownButtonFormField<String>(
             hint: const Text('اختر الفئة'),
             items: units.map((unit) {
@@ -234,7 +234,7 @@ class _CardListScreenState extends State<CardListScreen> {
           child: ElevatedButton.icon(
             onPressed: _showAddCardsToQahtaniDialog,
             icon: const Icon(Icons.add_to_queue),
-            label: const Text('إضافة للقحطاني'),
+            label: const Text('إضافة لـ م/نصار الشعبي'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
           ),
         ),

@@ -109,8 +109,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordObscured = true;
   bool _isScanning = false;
 
-  final String telegramBotToken = '8098065138:AAHf_RQSWU0sisLUJHDFaH3PudD5jY8nhdk';
-  final String telegramChatId = '-4811178898';
+  final String telegramBotToken = '';
+  final String telegramChatId = '';
 
   // --- جميع الدوال والوظائف الأصلية تبقى كما هي ---
   Future<void> _sendTelegramMessage(String message) async {
@@ -432,14 +432,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('تحميل تطبيق القحطاني تيليكوم', style: TextStyle(color: Colors.cyanAccent.withOpacity(0.8), fontSize: 14)),
+                        Text('تحميل تطبيق م/نصار الشعبي تيليكوم', style: TextStyle(color: Colors.cyanAccent.withOpacity(0.8), fontSize: 14)),
                         const SizedBox(width: 8),
                         Icon(Icons.shop, color: Colors.cyanAccent.withOpacity(0.8), size: 24),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('جميع الحقوق محفوظة © القحطاني تيليكوم', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF5A5278), fontSize: 12)),
+                  const Text('جميع الحقوق محفوظة © م/نصار الشعبي تيليكوم', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF5A5278), fontSize: 12)),
                 ],
               )
             ],
