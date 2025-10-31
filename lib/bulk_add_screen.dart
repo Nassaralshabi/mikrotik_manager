@@ -510,7 +510,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _selectedProfile,
+                value: _selectedProfile,
                 decoration: const InputDecoration(
                     labelText: 'الفئة (البروفايل)',
                     border: OutlineInputBorder()),
@@ -525,7 +525,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _charType,
+                value: _charType,
                 decoration: const InputDecoration(
                     labelText: 'نوع أحرف المستخدم',
                     border: OutlineInputBorder()),
@@ -538,7 +538,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _cardType,
+                value: _cardType,
                 decoration: const InputDecoration(
                     labelText: 'نوع الكرت', border: OutlineInputBorder()),
                 items: const [
