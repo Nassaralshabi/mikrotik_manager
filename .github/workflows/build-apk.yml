@@ -1,0 +1,86 @@
+name: Build Android APK & AAB on PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - '**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    env:
+      ARTIFACT_NAME: mikrotik-manager-apk-pr-${{ github.event.pull_request.number }}-${{ github.sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Set up Flutter 3.22 (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.22.3'
+          cache: true
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Clean previous builds
+        run: flutter clean
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Build release AAB (Android App Bundle)
+        run: flutter build appbundle --release
+
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload release AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Add build summary
+        run: |
+          echo "✅ Android Build succeeded for PR #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📱 **Artifacts Generated:**" >> $GITHUB_STEP_SUMMARY
+          echo "- APK: ${{ env.ARTIFACT_NAME }}-apk" >> $GITHUB_STEP_SUMMARY
+          echo "- AAB: ${{ env.ARTIFACT_NAME }}-aab" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📁 **File Paths:**" >> $GITHUB_STEP_SUMMARY
+          echo "- APK: build/app/outputs/flutter-apk/app-release.apk" >> $GITHUB_STEP_SUMMARY
+          echo "- AAB: build/app/outputs/bundle/release/app-release.aab" >> $GITHUB_STEP_SUMMARY

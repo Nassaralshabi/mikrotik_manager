@@ -34,8 +34,8 @@ class _AddUserScreenState extends State<AddUserScreen> {
   String _cardType = 'username_only';
   String _charType = 'numbers';
 
-  final String telegramBotToken = '8098065138:AAHf_RQSWU0sisLUJHDFaH3PudD5jY8nhdk';
-  final String telegramChatId = '-4811178898';
+  final String telegramBotToken = '';
+  final String telegramChatId = '';
 
   Future<void> _sendTelegramMessage(String message) async {
     final dio = Dio();
@@ -124,7 +124,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('تمت إضافة المستخدم "$username" بنجاح'),
-            backgroundColor: Colors.green,
+            backgroundColor: Theme.of(context).primaryColor,
             action: SnackBarAction(
               label: 'نسخ',
               textColor: Colors.white,
@@ -201,6 +201,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
                 controller: _usernameController,
                 decoration: const InputDecoration(
                     labelText: 'اسم المستخدم', border: OutlineInputBorder()),
+                style: const TextStyle(color: Colors.white),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'هذا الحقل مطلوب';
@@ -213,6 +214,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
                 controller: _sharedUsersController,
                 decoration: const InputDecoration(
                     labelText: 'Shared Users', border: OutlineInputBorder()),
+                style: const TextStyle(color: Colors.white),
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -226,11 +228,13 @@ class _AddUserScreenState extends State<AddUserScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _selectedProfile,
+                value: _selectedProfile,
                 decoration: const InputDecoration(
                     labelText: 'الفئة (البروفايل)',
                     border: OutlineInputBorder()),
                 hint: const Text('اختر فئة'),
+                style: const TextStyle(color: Colors.white),
+                dropdownColor: Colors.white,
                 items: widget.profiles.map((profile) {
                   final profileName = profile['name'] as String;
                   return DropdownMenuItem(
@@ -252,9 +256,11 @@ class _AddUserScreenState extends State<AddUserScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _cardType,
+                value: _cardType,
                 decoration: const InputDecoration(
                     labelText: 'نوع الكرت', border: OutlineInputBorder()),
+                style: const TextStyle(color: Colors.white),
+                dropdownColor: Colors.white,
                 items: const [
                   DropdownMenuItem(
                       value: 'username_only', child: Text('اسم مستخدم فقط')),
@@ -269,10 +275,12 @@ class _AddUserScreenState extends State<AddUserScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _charType,
+                value: _charType,
                 decoration: const InputDecoration(
                     labelText: 'نوع أحرف المستخدم',
                     border: OutlineInputBorder()),
+                style: const TextStyle(color: Colors.white),
+                dropdownColor: Colors.white,
                 items: const [
                   DropdownMenuItem(
                       value: 'mixed', child: Text('حروف وأرقام')),

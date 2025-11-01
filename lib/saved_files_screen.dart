@@ -205,7 +205,7 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
               ? const Center(
                   child: Text(
                     'لا توجد ملفات محفوظة.',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                    style: const TextStyle(fontSize: 18, color: Colors.white),
                   ),
                 )
               : ListView.builder(

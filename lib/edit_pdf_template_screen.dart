@@ -151,9 +151,9 @@ class _EditPdfTemplateScreenState extends State<EditPdfTemplateScreen> {
       await prefs.setStringList('pdf_templates', templatesJson);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('تم حفظ القالب بنجاح!'),
-          backgroundColor: Colors.green,
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('تم حفظ القالب بنجاح!'),
+          backgroundColor: Theme.of(context).primaryColor,
         ));
         Navigator.of(context).pop();
       }
@@ -229,6 +229,8 @@ class _EditPdfTemplateScreenState extends State<EditPdfTemplateScreen> {
                             decoration: const InputDecoration(
                                 labelText: 'اختر الفئة (البروفايل)',
                                 prefixIcon: Icon(Icons.category_outlined)),
+                            style: const TextStyle(color: Colors.white),
+                            dropdownColor: Colors.white,
                             items: widget.profiles
                                 .map((p) => DropdownMenuItem(
                                       value: p['name'] as String,
@@ -246,6 +248,7 @@ class _EditPdfTemplateScreenState extends State<EditPdfTemplateScreen> {
                             decoration: const InputDecoration(
                                 labelText: 'عدد الكروت في كل صفحة',
                                 prefixIcon: Icon(Icons.view_module_outlined)),
+                            style: const TextStyle(color: Colors.white),
                             keyboardType: TextInputType.number,
                             validator: (v) {
                               if (v == null || v.isEmpty) return 'الحقل مطلوب';
@@ -380,7 +383,7 @@ class _EditPdfTemplateScreenState extends State<EditPdfTemplateScreen> {
                             icon: const Icon(Icons.image_outlined),
                             label: const Text('اختر/غير صورة القالب'),
                             style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.teal),
+                                backgroundColor: Theme.of(context).primaryColor),
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
