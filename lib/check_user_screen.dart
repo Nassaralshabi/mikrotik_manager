@@ -148,7 +148,7 @@ class _CheckUserScreenState extends State<CheckUserScreen> {
                       ),
                     )
                   : _userDetails == null
-                      ? Center(child: Text(_statusMessage, style: const TextStyle(fontSize: 16, color: Colors.grey)))
+                      ? Center(child: Text(_statusMessage, style: const TextStyle(fontSize: 16, color: Colors.white)))
                       : _buildUserDetails(),
             ),
           ],
@@ -215,7 +215,7 @@ class _CheckUserScreenState extends State<CheckUserScreen> {
                 const SizedBox(width: 12),
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ],
             ),
@@ -233,7 +233,7 @@ class _CheckUserScreenState extends State<CheckUserScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[400])),
+          Text(label, style: const TextStyle(color: Colors.white)),
           Text(
             value,
             style: TextStyle(

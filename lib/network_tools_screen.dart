@@ -24,7 +24,6 @@ class NetworkToolsScreen extends StatelessWidget {
             ElevatedButton.icon(
               icon: const Icon(Icons.map_outlined, size: 28),
               label: const Text('خريطة الشبكة'),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00695C)),
               onPressed: () {
                 Navigator.of(context).push(MaterialPageRoute(
                   builder: (context) => NetworkMapScreen(client: client),
@@ -35,7 +34,6 @@ class NetworkToolsScreen extends StatelessWidget {
             ElevatedButton.icon(
               icon: const Icon(Icons.devices_other, size: 28),
               label: const Text('مراقبة الأجهزة'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
               onPressed: () {
                 Navigator.of(context).push(MaterialPageRoute(
                   builder: (context) => DeviceMonitoringScreen(client: client),

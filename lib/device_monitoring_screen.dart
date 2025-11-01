@@ -210,9 +210,9 @@ class _DeviceMonitoringScreenState extends State<DeviceMonitoringScreen> {
                     children: [
                       const Icon(Icons.devices_other, size: 80, color: Colors.grey),
                       const SizedBox(height: 16),
-                      const Text('لا توجد أجهزة للمراقبة', style: TextStyle(fontSize: 22)),
+                      const Text('لا توجد أجهزة للمراقبة', style: TextStyle(fontSize: 22, color: Colors.white)),
                       const SizedBox(height: 8),
-                      const Text('اضغط على زر التحديث لجلب الأجهزة', style: TextStyle(color: Colors.grey)),
+                      const Text('اضغط على زر التحديث لجلب الأجهزة', style: TextStyle(color: Colors.white)),
                     ],
                   ),
                 )
@@ -233,9 +233,9 @@ class _DeviceMonitoringScreenState extends State<DeviceMonitoringScreen> {
                           device.name,
                           style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                         ),
-                        subtitle: const Text(
+                        subtitle: Text(
                           device.ip,
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,

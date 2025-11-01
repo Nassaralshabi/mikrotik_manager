@@ -247,7 +247,7 @@ class _QahtaniLinkScreenState extends State<QahtaniLinkScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ربط الشبكة بالقحطاني'),
+        title: const Text('ربط الشبكة بـ م/نصار الشعبي'),
         backgroundColor: Theme.of(context).cardColor,
         actions: [
           if (_isLinked)
@@ -311,7 +311,7 @@ class _QahtaniLinkScreenState extends State<QahtaniLinkScreen> {
             child: ListTile(
               leading: const Icon(Icons.confirmation_number),
               title: Text(_linkedData['account_id'] ?? 'غير متوفر'),
-              subtitle: const Text('رقم حساب القحطاني'),
+              subtitle: const Text('رقم حساب م/نصار الشعبي'),
             ),
           ),
           const SizedBox(height: 16),
@@ -368,7 +368,7 @@ class _QahtaniLinkScreenState extends State<QahtaniLinkScreen> {
             TextField(
               controller: _accountIdController,
               decoration: const InputDecoration(
-                  labelText: 'أدخل رقم حسابك في القحطاني',
+                  labelText: 'أدخل رقم حسابك في م/نصار الشعبي',
                   prefixIcon: Icon(Icons.person_pin)),
               keyboardType: TextInputType.number,
             )

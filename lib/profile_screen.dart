@@ -78,7 +78,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildInfoCard(
             context,
             title: _profileData['account_id'] ?? 'غير متوفر',
-            subtitle: 'رقم حساب القحطاني',
+            subtitle: 'رقم حساب م/نصار الشعبي',
             icon: Icons.confirmation_number_outlined,
           ),
           _buildInfoCard(
@@ -110,7 +110,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(color: Colors.grey[400]),
+          style: const TextStyle(color: Colors.white),
         ),
       ),
     );
@@ -132,8 +132,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              'الرجاء الذهاب إلى شاشة "ربط الشبكة بالقحطاني" لإكمال عملية الربط أولاً.',
-              style: TextStyle(fontSize: 16, color: Colors.grey[400]),
+              'الرجاء الذهاب إلى شاشة "ربط الشبكة بـ م/نصار الشعبي" لإكمال عملية الربط أولاً.',
+              style: const TextStyle(fontSize: 16, color: Colors.white),
               textAlign: TextAlign.center,
             ),
           ],

@@ -1,0 +1,74 @@
+name: Deploy Web App
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-web:
+    name: Build Web Application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.22.3'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate app icons
+        run: flutter pub run flutter_launcher_icons || echo "Icon generation skipped"
+
+      - name: Build Web
+        run: |
+          flutter build web --release \
+            --web-renderer canvaskit \
+            --base-href /mikrotik_manager/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: build/web
+
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-web
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+
+      - name: Add deployment summary
+        run: |
+          echo "🌐 **Web App Deployed Successfully!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **Live URL:** ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✨ **Features:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 📱 Updated Qahtani logo as app icon" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚀 Optimized for web performance" >> $GITHUB_STEP_SUMMARY
+          echo "- 📱 Responsive design for all devices" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚡ Fast loading with CanvasKit renderer" >> $GITHUB_STEP_SUMMARY

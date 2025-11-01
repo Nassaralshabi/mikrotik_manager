@@ -106,7 +106,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
               _isJobAcknowledged = true;
             });
             Navigator.of(context, rootNavigator: true).pop();
-            _showWaitingDialog("تم استلام الطلب، جاري الإضافة إلى القحطاني...");
+            _showWaitingDialog("تم استلام الطلب، جاري الإضافة إلى م/نصار الشعبي...");
           }
           break;
         
@@ -128,7 +128,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(message['message'] ?? 'تمت العملية بنجاح.'),
-                backgroundColor: Colors.green,
+                backgroundColor: Theme.of(context).primaryColor,
               ),
             );
           }
@@ -148,7 +148,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
   void _showAddCardsToQahtaniDialog(List<String> cards) {
     if (!_isNetworkLinked) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الشبكة غير مرتبطة بحساب القحطاني')),
+        const SnackBar(content: Text('الشبكة غير مرتبطة بحساب م/نصار الشعبي')),
       );
       return;
     }
@@ -160,9 +160,11 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('اختر فئة القحطاني'),
+          title: const Text('اختر فئة م/نصار الشعبي'),
           content: DropdownButtonFormField<String>(
             hint: const Text('اختر الفئة'),
+            style: const TextStyle(color: Colors.white),
+            dropdownColor: Colors.white,
             items: units.map((unit) {
               return DropdownMenuItem<String>(
                 value: unit['id'],
@@ -406,7 +408,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
                           label: const Text('إضافة للقحطاني', style: TextStyle(fontSize: 11)),
                           onPressed: () => _showAddCardsToQahtaniDialog(_extractedCardNumbers),
                            style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal,
+                            backgroundColor: Theme.of(context).primaryColor,
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           ),
                         ),
@@ -500,12 +502,12 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const Icon(Icons.camera_alt_outlined,
-                              size: 80, color: Colors.deepOrange),
+                              size: 80, color: Color(0xFF6b3fa0)),
                           const SizedBox(height: 20),
                           const Text(
                             'أدخل شروط المسح الضوئي للكروت',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                            style: const TextStyle(fontSize: 18, color: Colors.white),
                           ),
                           const SizedBox(height: 32),
                           TextFormField(
@@ -514,6 +516,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
                               labelText: 'بادئة الكرت (بماذا يبدأ الرقم)',
                               prefixIcon: Icon(Icons.looks_one_outlined),
                             ),
+                            style: const TextStyle(color: Colors.white),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -529,6 +532,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
                               labelText: 'طول رقم الكرت (عدد الأرقام)',
                               prefixIcon: Icon(Icons.format_list_numbered),
                             ),
+                            style: const TextStyle(color: Colors.white),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -547,6 +551,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
                               labelText: 'العدد الإجمالي للكروت في الورقة',
                               prefixIcon: Icon(Icons.calculate_outlined),
                             ),
+                            style: const TextStyle(color: Colors.white),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value == null || value.isEmpty) {

@@ -281,11 +281,13 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
               TextFormField(
                 controller: nameController,
                 decoration: const InputDecoration(labelText: 'اسم الجهاز (مثال: صحن رئيسي)'),
+                style: const TextStyle(color: Colors.white),
                 validator: (v) => v!.isEmpty ? 'الحقل مطلوب' : null,
               ),
               TextFormField(
                 controller: ipController,
                 decoration: const InputDecoration(labelText: 'عنوان IP'),
+                style: const TextStyle(color: Colors.white),
                 validator: (v) => v!.isEmpty ? 'الحقل مطلوب' : null,
               ),
             ],
@@ -532,7 +534,7 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(deviceNode.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-          Text(deviceNode.ip, style: TextStyle(color: Colors.grey[300], fontSize: 12)),
+          Text(deviceNode.ip, style: const TextStyle(color: Colors.white, fontSize: 12)),
           if (!_isEditMode && deviceNode.status == DeviceStatus.offline)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
@@ -632,7 +634,7 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
           const SizedBox(height: 16),
           const Text('الخريطة فارغة', style: TextStyle(fontSize: 22)),
           const SizedBox(height: 8),
-          const Text('ابدأ ببناء خريطة شبكتك الآن', style: TextStyle(color: Colors.grey)),
+          const Text('ابدأ ببناء خريطة شبكتك الآن', style: TextStyle(color: Colors.white)),
           const SizedBox(height: 20),
           ElevatedButton.icon(
             onPressed: () => _showAddEditDialog(),

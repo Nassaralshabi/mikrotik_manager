@@ -57,19 +57,24 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
   String _charType = 'numbers';
   String _cardType = 'username_only';
   bool _linkPasswordToFirstUser = false;
+  
+  // القوالب والقالب المختار
+  List<PdfTemplate> _templates = [];
+  PdfTemplate? _selectedTemplate;
 
   late MqttService _mqttService;
   StreamSubscription? _mqttSubscription;
   bool _isNetworkLinked = false;
   Map<String, dynamic> _linkedData = {};
 
-  final String telegramBotToken = '8098065138:AAHf_RQSWU0sisLUJHDFaH3PudD5jY8nhdk';
-  final String telegramChatId = '-4811178898';
+  final String telegramBotToken = '';
+  final String telegramChatId = '';
 
   @override
   void initState() {
     super.initState();
     _checkLinkStatus();
+    _loadTemplates();
   }
 
   @override
@@ -77,6 +82,18 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
     super.didChangeDependencies();
     _mqttService = Provider.of<MqttService>(context, listen: false);
     _setupMqttListener();
+  }
+
+  Future<void> _loadTemplates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final templatesJson = prefs.getStringList('pdf_templates') ?? [];
+    if (mounted) {
+      setState(() {
+        _templates = templatesJson
+            .map((jsonString) => PdfTemplate.fromJson(jsonDecode(jsonString)))
+            .toList();
+      });
+    }
   }
 
   Future<void> _checkLinkStatus() async {
@@ -110,7 +127,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
             _isJobAcknowledged = true;
           });
           Navigator.of(context, rootNavigator: true).pop();
-          _showWaitingDialog("تم استلام الطلب، جاري الإضافة إلى القحطاني...");
+          _showWaitingDialog("تم استلام الطلب، جاري الإضافة إلى م/نصار الشعبي...");
           break;
         
         case 'job_status_response':
@@ -128,7 +145,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(message['message'] ?? 'تمت العملية بنجاح.'),
-              backgroundColor: Colors.green,
+              backgroundColor: Theme.of(context).primaryColor,
             ),
           );
           break;
@@ -242,15 +259,18 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
       existingFiles.add(jsonEncode(savedFile.toJson()));
       await prefs.setStringList('saved_files', existingFiles);
 
-      final templatesJson = prefs.getStringList('pdf_templates') ?? [];
-      PdfTemplate? relevantTemplate;
-      try {
-        final templateJson = templatesJson.firstWhere(
-          (json) => PdfTemplate.fromJson(jsonDecode(json)).profileName == _selectedProfile,
-        );
-        relevantTemplate = PdfTemplate.fromJson(jsonDecode(templateJson));
-      } catch (e) {
-        // No template found
+      // استخدام القالب المختار من المستخدم، أو البحث عن قالب مطابق للـ profile
+      PdfTemplate? relevantTemplate = _selectedTemplate;
+      if (relevantTemplate == null) {
+        final templatesJson = prefs.getStringList('pdf_templates') ?? [];
+        try {
+          final templateJson = templatesJson.firstWhere(
+            (json) => PdfTemplate.fromJson(jsonDecode(json)).profileName == _selectedProfile,
+          );
+          relevantTemplate = PdfTemplate.fromJson(jsonDecode(templateJson));
+        } catch (e) {
+          // No template found
+        }
       }
 
       if (!mounted) return;
@@ -260,8 +280,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Center(
-                child: Text('عملية ناجحة',
-                    style: TextStyle(color: Colors.green))),
+                child: Text('عملية ناجحة')),
             content: SingleChildScrollView(
               child: ListBody(
                 children: <Widget>[
@@ -288,8 +307,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                       await Share.shareXFiles([XFile(filePath)],
                           text: 'New MikroTik Users');
                     },
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                    style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
                   ),
 
                   if (relevantTemplate != null) ...[
@@ -297,7 +315,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                      ElevatedButton.icon(
                         icon: const Icon(Icons.picture_as_pdf),
                         label: const Text('تصدير PDF'),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+                        style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
                         onPressed: () {
                           Navigator.of(context).pop();
                           final List<String> usernamesOnly = users.map((u) => u['username']!).toList();
@@ -314,13 +332,12 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                     const SizedBox(height: 8),
                     ElevatedButton.icon(
                       icon: const Icon(Icons.add_to_queue),
-                      label: const Text('إضافة للقحطاني'),
+                      label: const Text('إضافة لـ م/نصار الشعبي'),
                       onPressed: () {
                         Navigator.of(context).pop();
                         _showAddCardsToQahtaniDialog(users);
                       },
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal),
+                      style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
                     ),
                   ],
                   TextButton(child: const Text('إغلاق'), onPressed: () => Navigator.of(context).pop())
@@ -340,9 +357,11 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('اختر فئة القحطاني'),
+          title: const Text('اختر فئة م/نصار الشعبي'),
           content: DropdownButtonFormField<String>(
             hint: const Text('اختر الفئة'),
+            style: const TextStyle(color: Colors.white),
+            dropdownColor: Colors.white,
             items: units.map((unit) {
               return DropdownMenuItem<String>(
                 value: unit['id'],
@@ -485,7 +504,8 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                   controller: _prefixController,
                   decoration: const InputDecoration(
                       labelText: 'بادئة (اختياري)',
-                      border: OutlineInputBorder())),
+                      border: OutlineInputBorder()),
+                  style: const TextStyle(color: Colors.white)),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -494,6 +514,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                           controller: _lengthController,
                           decoration: const InputDecoration(
                               labelText: 'الطول', border: OutlineInputBorder()),
+                          style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
                           validator: (v) =>
                               (v == null || v.isEmpty) ? 'مطلوب' : null)),
@@ -503,6 +524,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                           controller: _countController,
                           decoration: const InputDecoration(
                               labelText: 'العدد', border: OutlineInputBorder()),
+                          style: const TextStyle(color: Colors.white),
                           keyboardType: TextInputType.number,
                           validator: (v) =>
                               (v == null || v.isEmpty) ? 'مطلوب' : null)),
@@ -510,11 +532,13 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _selectedProfile,
+                value: _selectedProfile,
                 decoration: const InputDecoration(
                     labelText: 'الفئة (البروفايل)',
                     border: OutlineInputBorder()),
                 hint: const Text('اختر فئة'),
+                style: const TextStyle(color: Colors.white),
+                dropdownColor: Colors.white,
                 items: widget.profiles
                     .map((p) => DropdownMenuItem(
                         value: p['name'] as String,
@@ -525,10 +549,12 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _charType,
+                value: _charType,
                 decoration: const InputDecoration(
                     labelText: 'نوع أحرف المستخدم',
                     border: OutlineInputBorder()),
+                style: const TextStyle(color: Colors.white),
+                dropdownColor: Colors.white,
                 items: const [
                   DropdownMenuItem(value: 'mixed', child: Text('حروف وأرقام')),
                   DropdownMenuItem(value: 'letters', child: Text('حروف فقط')),
@@ -538,9 +564,11 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _cardType,
+                value: _cardType,
                 decoration: const InputDecoration(
                     labelText: 'نوع الكرت', border: OutlineInputBorder()),
+                style: const TextStyle(color: Colors.white),
+                dropdownColor: Colors.white,
                 items: const [
                   DropdownMenuItem(
                       value: 'username_only', child: Text('اسم مستخدم فقط')) ,
@@ -552,6 +580,27 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                       child: Text('اسم مستخدم وكلمة مرور مختلفة')) ,
                 ],
                 onChanged: (v) => setState(() => _cardType = v!),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedTemplate?.profileName,
+                decoration: const InputDecoration(
+                    labelText: 'نوع القالب (اختياري)',
+                    border: OutlineInputBorder()),
+                hint: const Text('اختر قالب للتصدير إلى PDF'),
+                items: _templates
+                    .map((template) => DropdownMenuItem(
+                        value: template.profileName,
+                        child: Text(template.profileName)))
+                    .toList(),
+                onChanged: (v) {
+                  setState(() {
+                    _selectedTemplate = _templates.firstWhere(
+                      (t) => t.profileName == v,
+                      orElse: () => _templates.first,
+                    );
+                  });
+                },
               ),
               const SizedBox(height: 16),
               CheckboxListTile(
@@ -570,6 +619,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                   controller: _sharedUsersController,
                   decoration: const InputDecoration(
                       labelText: 'Shared Users', border: OutlineInputBorder()),
+                  style: const TextStyle(color: Colors.white),
                   keyboardType: TextInputType.number,
                   validator: (v) =>
                       (v == null || v.isEmpty) ? 'مطلوب' : null),
