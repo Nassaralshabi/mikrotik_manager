@@ -444,7 +444,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               ],
             ),
           ),
-        ),
           // مفتاح تبديل الثيم في الزاوية العلوية اليسرى
           Positioned(
         top: 50,
