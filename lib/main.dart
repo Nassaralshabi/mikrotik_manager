@@ -445,8 +445,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
           ),
         ),
-            // مفتاح تبديل الثيم في الزاوية العلوية اليسرى
-            Positioned(
+        // مفتاح تبديل الثيم في الزاوية العلوية اليسرى
+        Positioned(
         top: 50,
         left: 20,
         child: Consumer<AppTheme>(
@@ -505,8 +505,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
           ),
         ),
-          ],
-        ),
+        ],
       ),
     );
   }
