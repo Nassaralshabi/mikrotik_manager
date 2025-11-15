@@ -443,67 +443,66 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 ),
               ],
             ),
-          ),
-          // مفتاح تبديل الثيم في الزاوية العلوية اليسرى
-          Positioned(
-        top: 50,
-        left: 20,
-        child: Consumer<AppTheme>(
-          builder: (context, themeProvider, child) => Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(25),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: Icon(
-                  themeProvider.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                  key: ValueKey(themeProvider.isDarkMode),
-                  color: themeProvider.isDarkMode ? Colors.amber[600] : Colors.indigo[600],
-                  size: 26,
-                ),
-              ),
-              tooltip: themeProvider.isDarkMode ? 'التبديل للثيم الفاتح' : 'التبديل للثيم الغامق',
-              onPressed: () async {
-                await themeProvider.toggleTheme();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                            size: 20,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            themeProvider.isDarkMode ? 'تم التبديل للثيم الغامق' : 'تم التبديل للثيم الفاتح',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ],
+            // مفتاح تبديل الثيم في الزاوية العلوية اليسرى
+            Positioned(
+              top: 50,
+              left: 20,
+              child: Consumer<AppTheme>(
+                builder: (context, themeProvider, child) => Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      duration: const Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Icon(
+                        themeProvider.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                        key: ValueKey(themeProvider.isDarkMode),
+                        color: themeProvider.isDarkMode ? Colors.amber[600] : Colors.indigo[600],
+                        size: 26,
                       ),
                     ),
-                  );
-                }
-              },
-            ),
-          ),
-        ),
+                    tooltip: themeProvider.isDarkMode ? 'التبديل للثيم الفاتح' : 'التبديل للثيم الغامق',
+                    onPressed: () async {
+                      await themeProvider.toggleTheme();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                                  size: 20,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  themeProvider.isDarkMode ? 'تم التبديل للثيم الغامق' : 'تم التبديل للثيم الفاتح',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ],
+                            ),
+                            duration: const Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ),
         ],
       ),
     );
