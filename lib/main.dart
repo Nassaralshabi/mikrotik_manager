@@ -383,65 +383,67 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                Icon(Icons.router, size: 64, color: context.theme.appColors.primary),
-                const SizedBox(height: 24),
-                Text(
-                  'إدارة شبكتك بسهولة وأمان',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Theme.of(context).textTheme.bodyMedium?.color,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicatorColor: context.theme.appColors.primary,
-                    labelColor: context.theme.appColors.onSurface,
-                    unselectedLabelColor: context.theme.appColors.muted,
-                    indicatorWeight: 3,
-                    tabs: const [
-                      Tab(
-                        icon: Icon(Icons.lan),
-                        text: 'اتصال محلي',
-                      ),
-                      Tab(
-                        icon: Icon(Icons.cloud),
-                        text: 'اتصال عن بعد',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                if (_errorMessage.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: Text(
-                      _errorMessage,
+                    Icon(Icons.router, size: 64, color: context.theme.appColors.primary),
+                    const SizedBox(height: 24),
+                    Text(
+                      'إدارة شبكتك بسهولة وأمان',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: context.theme.appColors.error,
-                        fontSize: 12,
+                        fontSize: 16,
+                        color: Theme.of(context).textTheme.bodyMedium?.color,
                       ),
                     ),
-                  ),
-                SizedBox(
-                  height: 550,
-                  child: TabBarView(
-                    controller: _tabController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      _buildLocalLoginForm(),
-                      _buildRemoteLoginForm(),
-                    ],
-                  ),
+                    const SizedBox(height: 24),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TabBar(
+                        controller: _tabController,
+                        indicatorColor: context.theme.appColors.primary,
+                        labelColor: context.theme.appColors.onSurface,
+                        unselectedLabelColor: context.theme.appColors.muted,
+                        indicatorWeight: 3,
+                        tabs: const [
+                          Tab(
+                            icon: Icon(Icons.lan),
+                            text: 'اتصال محلي',
+                          ),
+                          Tab(
+                            icon: Icon(Icons.cloud),
+                            text: 'اتصال عن بعد',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    if (_errorMessage.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Text(
+                          _errorMessage,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: context.theme.appColors.error,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    SizedBox(
+                      height: 550,
+                      child: TabBarView(
+                        controller: _tabController,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          _buildLocalLoginForm(),
+                          _buildRemoteLoginForm(),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
             // مفتاح تبديل الثيم في الزاوية العلوية اليسرى
             Positioned(
@@ -503,7 +505,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                 ),
               ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
