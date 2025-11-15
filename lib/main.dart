@@ -1164,28 +1164,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ),
 
                   // --- شبكة الخدمات ---
-                  GridView.builder(
-                    padding: const EdgeInsets.all(16.0),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3, // 3 أعمدة لمظهر أفضل على معظم الشاشات
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.9, // تعديل النسبة لتناسب المحتوى
+                  SizedBox(
+                    height: 180,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: services.length,
+                      itemBuilder: (context, index) {
+                        final service = services[index];
+                        return Container(
+                          width: MediaQuery.of(context).size.width * 0.35,
+                          margin: const EdgeInsets.only(right: 12),
+                          child: RepaintBoundary(
+                            child: _buildServiceGridItem(
+                              title: service.title,
+                              icon: service.icon,
+                              iconBgColor: service.color,
+                              onTap: service.onTap,
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    itemCount: services.length,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemBuilder: (context, index) {
-                      final service = services[index];
-                      return RepaintBoundary(
-                        child: _buildServiceGridItem(
-                          title: service.title,
-                          icon: service.icon,
-                          iconBgColor: service.color,
-                          onTap: service.onTap,
-                        ),
-                      );
-                    },
                   ),
                 ],
               ),
