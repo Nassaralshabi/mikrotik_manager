@@ -8,6 +8,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'theme/app_gradients.dart';
 import 'mikrotik_connector.dart';
 
 class StatsScreen extends StatefulWidget {
@@ -19,6 +20,8 @@ class StatsScreen extends StatefulWidget {
 
 class _StatsScreenState extends State<StatsScreen> {
   bool _isLoading = true;
+  bool _isRefreshing = false;
+  bool _hasLoadedOnce = false;
   String _errorMessage = '';
   
   Map<String, dynamic> _stats = {
@@ -35,14 +38,64 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchMikrotikStats();
+    _initialize();
   }
 
-  Future<void> _fetchMikrotikStats() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
+  Future<void> _initialize() async {
+    final hasCached = await _loadCachedStats();
+    await _fetchMikrotikStats(showLoading: !hasCached);
+  }
+
+  Future<bool> _loadCachedStats() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString('cached_stats');
+    if (cached == null) {
+      return false;
+    }
+    try {
+      final decoded = jsonDecode(cached);
+      if (decoded is! Map<String, dynamic>) {
+        return false;
+      }
+      if (!mounted) return false;
+      setState(() {
+        _stats = {
+          'totalSessions': (decoded['totalSessions'] as num?)?.toInt() ?? 0,
+          'dataDownloaded': (decoded['dataDownloaded'] as num?)?.toDouble() ?? 0.0,
+          'dataUploaded': (decoded['dataUploaded'] as num?)?.toDouble() ?? 0.0,
+          'cpuUsage': (decoded['cpuUsage'] as num?)?.toDouble() ?? 0.0,
+          'memoryUsage': (decoded['memoryUsage'] as num?)?.toDouble() ?? 0.0,
+          'uptime': decoded['uptime']?.toString() ?? '',
+          'activeUsers': (decoded['activeUsers'] as num?)?.toInt() ?? 0,
+          'version': decoded['version']?.toString() ?? '',
+        };
+        _errorMessage = '';
+        _isLoading = false;
+        _hasLoadedOnce = true;
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _fetchMikrotikStats({bool showLoading = true}) async {
+    final useLoadingState = showLoading || !_hasLoadedOnce;
+    if (useLoadingState) {
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _errorMessage = '';
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = true;
+          _errorMessage = '';
+        });
+      }
+    }
 
     RouterOSClient? client;
     try {
@@ -63,7 +116,11 @@ class _StatsScreenState extends State<StatsScreen> {
         resourceData = Map<String, dynamic>.from(resourceResponse[0]);
       }
 
-      final interfaceResponse = await client.talk(['/interface/print', 'stats']);
+      final interfaceResponse = await client.talk([
+        '/interface/print',
+        '=.proplist=name,rx-byte,tx-byte',
+        'stats',
+      ]);
       double totalDownload = 0.0;
       double totalUpload = 0.0;
       
@@ -83,62 +140,72 @@ class _StatsScreenState extends State<StatsScreen> {
       }
 
       List<Map<String, dynamic>> sessions = [];
-      try {
-        if (isVersion7OrNewer) {
-          final sessionResponse = await client.talk(['/ip/hotspot/active/print']);
+      if (isVersion7OrNewer) {
+        sessions = List<Map<String, dynamic>>.from(activeUsers);
+      } else {
+        try {
+          final sessionResponse = await client.talk(['/tool/user-manager/session/print']);
           sessions = sessionResponse.map((e) => Map<String, dynamic>.from(e)).toList();
-        } else {
-          try {
-            final sessionResponse = await client.talk(['/tool/user-manager/session/print']);
-            sessions = sessionResponse.map((e) => Map<String, dynamic>.from(e)).toList();
-          } catch (e) {
-            sessions = [];
-          }
+        } catch (e) {
+          sessions = [];
         }
-      } catch (e) {
-        sessions = [];
       }
 
       final cpuLoad = resourceData['cpu-load']?.toString() ?? '0';
-      final totalMemory = double.tryParse(resourceData['total-memory']?.toString() ?? '0') ?? 1.0;
+      final totalMemory = double.tryParse(resourceData['total-memory']?.toString() ?? '0') ?? 0.0;
       final freeMemory = double.tryParse(resourceData['free-memory']?.toString() ?? '0') ?? 0.0;
-      final memoryUsagePercent = ((totalMemory - freeMemory) / totalMemory * 100);
+      final memoryUsagePercent = totalMemory <= 0
+          ? 0.0
+          : ((totalMemory - freeMemory) / totalMemory * 100);
+
+      final updatedStats = {
+        'totalSessions': sessions.length,
+        'dataDownloaded': totalDownload / (1024 * 1024),
+        'dataUploaded': totalUpload / (1024 * 1024),
+        'cpuUsage': double.tryParse(cpuLoad) ?? 0.0,
+        'memoryUsage': memoryUsagePercent,
+        'uptime': resourceData['uptime']?.toString() ?? 'غير متوفر',
+        'activeUsers': activeUsers.length,
+        'version': resourceData['version']?.toString() ?? 'غير معروف',
+      };
 
       if (mounted) {
         setState(() {
-          _stats = {
-            'totalSessions': sessions.length,
-            'dataDownloaded': totalDownload / (1024 * 1024),
-            'dataUploaded': totalUpload / (1024 * 1024),
-            'cpuUsage': double.tryParse(cpuLoad) ?? 0.0,
-            'memoryUsage': memoryUsagePercent,
-            'uptime': resourceData['uptime']?.toString() ?? 'غير متوفر',
-            'activeUsers': activeUsers.length,
-            'version': resourceData['version']?.toString() ?? 'غير معروف',
-          };
+          _stats = updatedStats;
           _isLoading = false;
+          _isRefreshing = false;
+          _errorMessage = '';
+          _hasLoadedOnce = true;
         });
       }
 
       await prefs.setString('mikrotik_version', resourceData['version']?.toString() ?? '6');
+      await prefs.setString('cached_stats', jsonEncode(updatedStats));
 
     } on MikrotikCredentialsMissingException catch (e) {
-      setState(() {
-        _errorMessage = 'خطأ في بيانات الدخول: ${e.message}';
-        _isLoading = false;
-      });
+      _handleFetchError('خطأ في بيانات الدخول: ${e.message}', useLoadingState);
     } on MikrotikConnectionException catch (e) {
-      setState(() {
-        _errorMessage = 'خطأ في الاتصال: ${e.message}';
-        _isLoading = false;
-      });
+      _handleFetchError('خطأ في الاتصال: ${e.message}', useLoadingState);
     } catch (e) {
-      setState(() {
-        _errorMessage = 'حدث خطأ أثناء جلب البيانات: ${e.toString()}';
-        _isLoading = false;
-      });
+      _handleFetchError('حدث خطأ أثناء جلب البيانات: ${e.toString()}', useLoadingState);
     } finally {
       client?.close();
+    }
+  }
+
+  void _handleFetchError(String message, bool usedLoadingState) {
+    if (!mounted) return;
+    if (usedLoadingState) {
+      setState(() {
+        _errorMessage = message;
+        _isLoading = false;
+        _isRefreshing = false;
+      });
+    } else {
+      setState(() {
+        _isRefreshing = false;
+      });
+      showErrorSnackBar(context, message);
     }
   }
 
@@ -248,24 +315,32 @@ class _StatsScreenState extends State<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('الإحصائيات'),
-        backgroundColor: Theme.of(context).cardColor,
-        actions: [
+    return Container(
+      decoration: const BoxDecoration(gradient: AppGradients.softBackground),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text('الإحصائيات'),
+          backgroundColor: Theme.of(context).cardColor,
+          actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _isLoading ? null : _fetchMikrotikStats,
+            onPressed: (_isLoading || _isRefreshing)
+                ? null
+                : () => _fetchMikrotikStats(showLoading: false),
             tooltip: 'تحديث',
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed: (_isLoading || _errorMessage.isNotEmpty) ? null : _generatePdfReport,
+            onPressed: (_isLoading || _isRefreshing || _errorMessage.isNotEmpty)
+                ? null
+                : _generatePdfReport,
             tooltip: 'تصدير PDF',
           ),
         ],
+        ),
+        body: _buildBody(),
       ),
-      body: _buildBody(),
     );
   }
 
@@ -307,12 +382,12 @@ class _StatsScreenState extends State<StatsScreen> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.redAccent,
-                  fontSize: 16,
+                  fontSize: 12,
                 ),
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: _fetchMikrotikStats,
+                onPressed: () => _fetchMikrotikStats(showLoading: true),
                 icon: const Icon(Icons.refresh),
                 label: const Text('إعادة المحاولة'),
               ),
@@ -322,16 +397,25 @@ class _StatsScreenState extends State<StatsScreen> {
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildPieChart(),
-          const SizedBox(height: 24),
-          _buildStatsGrid(),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_isRefreshing)
+          const LinearProgressIndicator(minHeight: 3),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPieChart(),
+                const SizedBox(height: 24),
+                _buildStatsGrid(),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -554,10 +638,10 @@ class _StatsScreenState extends State<StatsScreen> {
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).textTheme.titleLarge?.color ?? Colors.black87,
               ),
             ),
           ],
@@ -597,10 +681,10 @@ class _StatsScreenState extends State<StatsScreen> {
                   const SizedBox(height: 4),
                   Text(
                     _formatUptime(_stats['uptime']),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Theme.of(context).textTheme.titleMedium?.color ?? Colors.black87,
                     ),
                   ),
                 ],

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'snackbar_helpers.dart';
 import 'package:image_picker/image_picker.dart';
+import 'theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -240,7 +241,7 @@ class _EditPdfTemplateScreenState extends State<EditPdfTemplateScreen> {
                             decoration: const InputDecoration(
                                 labelText: 'عدد الكروت في كل صفحة',
                                 prefixIcon: Icon(Icons.view_module_outlined)),
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
                             keyboardType: TextInputType.number,
                             validator: (v) {
                               if (v == null || v.isEmpty) return 'الحقل مطلوب';
@@ -314,11 +315,11 @@ class _EditPdfTemplateScreenState extends State<EditPdfTemplateScreen> {
                                             height: _markerHeight,
                                             decoration: BoxDecoration(
                                               border: Border.all(
-                                                  color: Colors.redAccent,
+                                                  color: context.theme.appColors.error,
                                                   width: 2),
                                               borderRadius:
                                                   BorderRadius.circular(4),
-                                              color: Colors.redAccent
+                                              color: context.theme.appColors.error
                                                   .withAlpha((255 * 0.3).round()),
                                             ),
                                           ),

@@ -110,7 +110,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54),
         ),
       ),
     );
@@ -133,7 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 10),
             Text(
               'الرجاء الذهاب إلى شاشة "ربط الشبكة بـ م/نصار الشعبي" لإكمال عملية الربط أولاً.',
-              style: const TextStyle(fontSize: 16, color: Colors.white),
+              style: TextStyle(fontSize: 16, color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
               textAlign: TextAlign.center,
             ),
           ],

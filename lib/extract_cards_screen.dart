@@ -492,10 +492,10 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
                           const Icon(Icons.camera_alt_outlined,
                               size: 80, color: Color(0xFF6b3fa0)),
                           const SizedBox(height: 20),
-                          const Text(
+                          Text(
                             'أدخل شروط المسح الضوئي للكروت',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 18, color: Colors.white),
+                            style: TextStyle(fontSize: 18, color: Theme.of(context).textTheme.titleMedium?.color ?? Colors.black87),
                           ),
                           const SizedBox(height: 32),
                           TextFormField(
@@ -504,7 +504,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
                               labelText: 'بادئة الكرت (بماذا يبدأ الرقم)',
                               prefixIcon: Icon(Icons.looks_one_outlined),
                             ),
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -520,7 +520,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
                               labelText: 'طول رقم الكرت (عدد الأرقام)',
                               prefixIcon: Icon(Icons.format_list_numbered),
                             ),
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -539,7 +539,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
                               labelText: 'العدد الإجمالي للكروت في الورقة',
                               prefixIcon: Icon(Icons.calculate_outlined),
                             ),
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value == null || value.isEmpty) {

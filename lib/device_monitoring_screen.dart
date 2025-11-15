@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:router_os_client/router_os_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'snackbar_helpers.dart';
+import 'theme/app_theme.dart';
 import 'package:uuid/uuid.dart';
 
 enum DeviceStatus { online, offline }
@@ -205,9 +206,20 @@ class _DeviceMonitoringScreenState extends State<DeviceMonitoringScreen> {
                     children: [
                       const Icon(Icons.devices_other, size: 80, color: Colors.grey),
                       const SizedBox(height: 16),
-                      const Text('لا توجد أجهزة للمراقبة', style: TextStyle(fontSize: 22, color: Colors.white)),
+                      Text(
+                        'لا توجد أجهزة للمراقبة',
+                        style: TextStyle(
+                          fontSize: 22,
+                          color: Theme.of(context).textTheme.titleLarge?.color ?? Colors.black87,
+                        ),
+                      ),
                       const SizedBox(height: 8),
-                      const Text('اضغط على زر التحديث لجلب الأجهزة', style: TextStyle(color: Colors.white)),
+                      Text(
+                        'اضغط على زر التحديث لجلب الأجهزة',
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87,
+                        ),
+                      ),
                     ],
                   ),
                 )
@@ -222,7 +234,7 @@ class _DeviceMonitoringScreenState extends State<DeviceMonitoringScreen> {
                       child: ListTile(
                         leading: Icon(
                           device.status == DeviceStatus.online ? Icons.circle : Icons.circle_outlined,
-                          color: device.status == DeviceStatus.online ? Colors.greenAccent : Colors.grey,
+                          color: device.status == DeviceStatus.online ? context.theme.appColors.success : context.theme.appColors.muted,
                         ),
                         title: Text(
                           device.name,
@@ -238,7 +250,7 @@ class _DeviceMonitoringScreenState extends State<DeviceMonitoringScreen> {
                             Text(
                               device.status == DeviceStatus.online ? 'متصل' : 'غير متصل',
                               style: TextStyle(
-                                color: device.status == DeviceStatus.online ? Colors.greenAccent : Colors.grey,
+                                color: device.status == DeviceStatus.online ? context.theme.appColors.success : context.theme.appColors.muted,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

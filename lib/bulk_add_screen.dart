@@ -495,7 +495,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                   decoration: const InputDecoration(
                       labelText: 'بادئة (اختياري)',
                       border: OutlineInputBorder()),
-                  style: const TextStyle(color: Colors.white)),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87)),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -504,7 +504,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                           controller: _lengthController,
                           decoration: const InputDecoration(
                               labelText: 'الطول', border: OutlineInputBorder()),
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
                           keyboardType: TextInputType.number,
                           validator: (v) =>
                               (v == null || v.isEmpty) ? 'مطلوب' : null)),
@@ -514,7 +514,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                           controller: _countController,
                           decoration: const InputDecoration(
                               labelText: 'العدد', border: OutlineInputBorder()),
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
                           keyboardType: TextInputType.number,
                           validator: (v) =>
                               (v == null || v.isEmpty) ? 'مطلوب' : null)),
@@ -609,7 +609,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                   controller: _sharedUsersController,
                   decoration: const InputDecoration(
                       labelText: 'Shared Users', border: OutlineInputBorder()),
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
                   keyboardType: TextInputType.number,
                   validator: (v) =>
                       (v == null || v.isEmpty) ? 'مطلوب' : null),

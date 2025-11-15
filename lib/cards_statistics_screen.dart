@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:router_os_client/router_os_client.dart';
+import 'theme/app_theme.dart';
 import 'mikrotik_connector.dart';
 
 enum TimeRange { all, today, week, month, custom }
@@ -376,7 +377,10 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
                 children: [
                   CircularProgressIndicator(color: theme.primaryColor),
                   const SizedBox(height: 16),
-                  const Text('جاري تحميل الإحصائيات...', style: TextStyle(color: Colors.white70)),
+                  Text(
+                    'جاري تحميل الإحصائيات...',
+                    style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7) ?? Colors.black54),
+                  ),
                 ],
               ),
             )
@@ -387,12 +391,12 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 80, color: Colors.redAccent.withOpacity(0.8)),
+                        Icon(Icons.error_outline, size: 80, color: context.theme.appColors.error.withOpacity(0.8)),
                         const SizedBox(height: 24),
                         Text(
                           _errorMessage!,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87, fontSize: 16),
                         ),
                         const SizedBox(height: 32),
                         ElevatedButton.icon(
@@ -460,16 +464,16 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
             children: [
               Icon(Icons.tune, color: theme.primaryColor, size: 24),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'فلترة متقدمة',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color ?? Colors.black87),
               ),
             ],
           ),
           const SizedBox(height: 20),
           
           // Status Filter
-          const Text('حالة الكرت', style: TextStyle(fontSize: 14, color: Colors.white70, fontWeight: FontWeight.w500)),
+          Text('حالة الكرت', style: TextStyle(fontSize: 14, color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54, fontWeight: FontWeight.w500)),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -520,7 +524,7 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
                 },
                 backgroundColor: theme.cardColor,
                 selectedColor: theme.primaryColor,
-                labelStyle: TextStyle(color: selected ? Colors.white : Colors.white60),
+                labelStyle: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
                 side: BorderSide(color: selected ? theme.primaryColor : Colors.white30),
               );
             }).toList(),
@@ -529,7 +533,7 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
           const SizedBox(height: 20),
           
           // Profile Filter
-          const Text('الفئة', style: TextStyle(fontSize: 14, color: Colors.white70, fontWeight: FontWeight.w500)),
+          Text('الفئة', style: TextStyle(fontSize: 14, color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54, fontWeight: FontWeight.w500)),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -542,18 +546,18 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
               child: DropdownButton<String>(
                 isExpanded: true,
                 value: _selectedProfile,
-                hint: const Text('اختر الفئة', style: TextStyle(color: Colors.white60)),
+                hint: Text('اختر الفئة', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54)),
                 dropdownColor: theme.cardColor,
                 icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
                 items: [
-                  const DropdownMenuItem<String>(
+                  DropdownMenuItem<String>(
                     value: null,
-                    child: Text('جميع الفئات', style: TextStyle(color: Colors.white)),
+                    child: Text('جميع الفئات', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87)),
                   ),
                   ...allProfiles.map((profile) {
                     return DropdownMenuItem<String>(
                       value: profile,
-                      child: Text(profile, style: const TextStyle(color: Colors.white)),
+                      child: Text(profile, style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87)),
                     );
                   }).toList(),
                 ],
@@ -679,7 +683,7 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('الفلاتر النشطة:', style: TextStyle(fontSize: 12, color: Colors.white60)),
+        Text('الفلاتر النشطة:', style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -797,19 +801,19 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
           const SizedBox(height: 16),
           Text(
             '$_totalCards',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 56,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).textTheme.titleLarge?.color ?? Colors.black87,
               letterSpacing: 2,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'إجمالي الكروت',
             style: TextStyle(
               fontSize: 20,
-              color: Colors.white,
+              color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -817,13 +821,13 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildMiniStat('مفعل', _activeCards, Icons.check_circle, Colors.greenAccent),
+              _buildMiniStat('مفعل', _activeCards, Icons.check_circle, context.theme.appColors.success),
               Container(width: 1, height: 40, color: Colors.white30),
-              _buildMiniStat('معطل', _disabledCards, Icons.cancel, Colors.redAccent),
+              _buildMiniStat('معطل', _disabledCards, Icons.cancel, context.theme.appColors.error),
               Container(width: 1, height: 40, color: Colors.white30),
-              _buildMiniStat('منتهي', _expiredCards, Icons.hourglass_empty, Colors.orangeAccent),
+              _buildMiniStat('منتهي', _expiredCards, Icons.hourglass_empty, context.theme.appColors.warning),
               Container(width: 1, height: 40, color: Colors.white30),
-              _buildMiniStat('نشط', _cardsWithSessions, Icons.wifi, Colors.blueAccent),
+              _buildMiniStat('نشط', _cardsWithSessions, Icons.wifi, context.theme.appColors.info),
             ],
           ),
         ],
@@ -838,18 +842,18 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
         const SizedBox(height: 8),
         Text(
           '$value',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: Colors.white70,
+            color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54,
           ),
         ),
       ],
@@ -869,14 +873,14 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
           'الجلسات النشطة',
           _totalSessions,
           Icons.devices,
-          Colors.orangeAccent,
+          context.theme.appColors.warning,
           theme,
         ),
         _buildSmallStatCard(
           'معدل النشاط',
           _totalCards > 0 ? ((_cardsWithSessions / _totalCards) * 100).round() : 0,
           Icons.trending_up,
-          Colors.purpleAccent,
+          context.theme.appColors.primary,
           theme,
           suffix: '%',
         ),
@@ -911,18 +915,18 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
           const SizedBox(height: 16),
           Text(
             '$value$suffix',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).textTheme.titleLarge?.color ?? Colors.black87,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Colors.white60,
+              color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54,
             ),
           ),
         ],
@@ -981,7 +985,7 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
               Expanded(
                 child: Text(
                   'استهلاك البيانات$suffix',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleMedium?.color ?? Colors.black87),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 2,
                 ),
@@ -996,7 +1000,7 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
                   'التحميل',
                   _totalDownloadGB,
                   Icons.download,
-                  Colors.greenAccent,
+                  context.theme.appColors.success,
                   downloadPercent,
                 ),
               ),
@@ -1006,7 +1010,7 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
                   'الرفع',
                   _totalUploadGB,
                   Icons.upload,
-                  Colors.blueAccent,
+                  context.theme.appColors.info,
                   uploadPercent,
                 ),
               ),
@@ -1024,17 +1028,17 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
               children: [
                 Row(
                   children: [
-                    Icon(Icons.storage, color: Colors.orangeAccent, size: 20),
+                    Icon(Icons.storage, color: context.theme.appColors.warning, size: 20),
                     const SizedBox(width: 8),
-                    const Text('المجموع الكلي', style: TextStyle(color: Colors.white70)),
+                    Text('المجموع الكلي', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54)),
                   ],
                 ),
                 Text(
                   '${totalData.toStringAsFixed(2)} GB',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.orangeAccent,
+                    color: context.theme.appColors.warning,
                   ),
                 ),
               ],
@@ -1055,7 +1059,7 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(fontSize: 13, color: Colors.white70),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54),
             ),
           ],
         ),
@@ -1109,15 +1113,15 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.purpleAccent.withOpacity(0.15),
+                  color: context.theme.appColors.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.category, color: Colors.purpleAccent, size: 24),
+                child: Icon(Icons.category, color: context.theme.appColors.primary, size: 24),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'توزيع الكروت حسب الفئة',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color ?? Colors.black87),
               ),
             ],
           ),
@@ -1128,10 +1132,10 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
             final percentage = (_totalCards > 0 ? (profileEntry.value / _totalCards) : 0.0);
             
             final colors = [
-              Colors.purpleAccent,
-              Colors.blueAccent,
-              Colors.greenAccent,
-              Colors.orangeAccent,
+              context.theme.appColors.primary,
+              context.theme.appColors.info,
+              context.theme.appColors.success,
+              context.theme.appColors.warning,
               Colors.pinkAccent,
               Colors.cyanAccent,
             ];
@@ -1148,7 +1152,7 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
                       Expanded(
                         child: Text(
                           profileEntry.key,
-                          style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w500),
+                          style: TextStyle(fontSize: 14, color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87, fontWeight: FontWeight.w500),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -1189,11 +1193,11 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: Text(
             'إحصائيات سريعة',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color ?? Colors.black87),
           ),
         ),
         const SizedBox(height: 12),
@@ -1262,19 +1266,19 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
           const SizedBox(height: 12),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).textTheme.titleLarge?.color ?? Colors.black87,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.white60,
+              color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54,
             ),
           ),
         ],

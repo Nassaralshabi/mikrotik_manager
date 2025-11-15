@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 
 import 'mikrotik_connector.dart';
 import 'snackbar_helpers.dart';
+import 'theme/app_theme.dart';
 
 class AddUserScreen extends StatefulWidget {
   final List<Map<String, dynamic>> profiles;
@@ -174,7 +175,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
                 controller: _usernameController,
                 decoration: const InputDecoration(
                     labelText: 'اسم المستخدم', border: OutlineInputBorder()),
-                style: const TextStyle(color: Colors.white),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'هذا الحقل مطلوب';
@@ -187,7 +187,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
                 controller: _sharedUsersController,
                 decoration: const InputDecoration(
                     labelText: 'Shared Users', border: OutlineInputBorder()),
-                style: const TextStyle(color: Colors.white),
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -202,17 +201,15 @@ class _AddUserScreenState extends State<AddUserScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedProfile,
-                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                dropdownColor: Colors.white,
                 decoration: const InputDecoration(
                     labelText: 'الفئة (البروفايل)',
                     border: OutlineInputBorder()),
-                hint: const Text('اختر فئة', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
+                hint: const Text('اختر فئة'),
                 items: widget.profiles.map((profile) {
                   final profileName = profile['name'] as String;
                   return DropdownMenuItem(
                     value: profileName,
-                    child: Text(profileName, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                    child: Text(profileName),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -230,37 +227,33 @@ class _AddUserScreenState extends State<AddUserScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _cardType,
-                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                dropdownColor: Colors.white,
                 decoration: const InputDecoration(
                     labelText: 'نوع الكرت', border: OutlineInputBorder()),
                 items: const [
                   DropdownMenuItem(
-                      value: 'username_only', child: Text('اسم مستخدم فقط', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold))),
+                      value: 'username_only', child: Text('اسم مستخدم فقط')),
                   DropdownMenuItem(
                       value: 'username_and_password_equal',
-                      child: Text('اسم مستخدم وكلمة مرور متساوية', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold))),
+                      child: Text('اسم مستخدم وكلمة مرور متساوية')),
                   DropdownMenuItem(
                       value: 'username_and_password_different',
-                      child: Text('اسم مستخدم وكلمة مرور مختلفة', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold))),
+                      child: Text('اسم مستخدم وكلمة مرور مختلفة')),
                 ],
                 onChanged: (v) => setState(() => _cardType = v!),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _charType,
-                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                dropdownColor: Colors.white,
                 decoration: const InputDecoration(
                     labelText: 'نوع أحرف المستخدم',
                     border: OutlineInputBorder()),
                 items: const [
                   DropdownMenuItem(
-                      value: 'mixed', child: Text('حروف وأرقام', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold))),
+                      value: 'mixed', child: Text('حروف وأرقام')),
                   DropdownMenuItem(
-                      value: 'letters', child: Text('حروف فقط', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold))),
+                      value: 'letters', child: Text('حروف فقط')),
                   DropdownMenuItem(
-                      value: 'numbers', child: Text('أرقام فقط', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold))),
+                      value: 'numbers', child: Text('أرقام فقط')),
                 ],
                 onChanged: (v) => setState(() => _charType = v!),
               ),
