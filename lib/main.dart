@@ -32,8 +32,11 @@ import 'theme/app_gradients.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => MqttService(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => MqttService()),
+        ChangeNotifierProvider(create: (_) => AppTheme()..initialize()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -107,14 +110,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      debugShowCheckedModeBanner: false,
-      title: 'MikroTik Manager',
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.light,
-      home: const LoginScreen(),
+    return Consumer<AppTheme>(
+      builder: (context, themeProvider, child) => MaterialApp(
+        scaffoldMessengerKey: scaffoldMessengerKey,
+        debugShowCheckedModeBanner: false,
+        title: 'MikroTik Manager',
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        // Theme Provider يدير الوضع تلقائياً
+        themeMode: themeProvider.themeMode,
+        home: const LoginScreen(),
+      ),
     );
   }
 }
@@ -367,13 +373,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       decoration: const BoxDecoration(gradient: AppGradients.softBackground),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
+        body: Stack(
+          children: [
+            // المحتوى الرئيسي
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
                 Image.asset('assets/images/wifi_logo.png', width: 48, height: 48),
                 const SizedBox(height: 24),
                 Text(
@@ -435,8 +444,70 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               ],
             ),
           ),
+        ],
+      ),
+      // مفتاح تبديل الثيم في الزاوية العلوية اليسرى
+      Positioned(
+        top: 50,
+        left: 20,
+        child: Consumer<AppTheme>(
+          builder: (context, themeProvider, child) => Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Icon(
+                  themeProvider.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  key: ValueKey(themeProvider.isDarkMode),
+                  color: themeProvider.isDarkMode ? Colors.amber[600] : Colors.indigo[600],
+                  size: 26,
+                ),
+              ),
+              tooltip: themeProvider.isDarkMode ? 'التبديل للثيم الفاتح' : 'التبديل للثيم الغامق',
+              onPressed: () async {
+                await themeProvider.toggleTheme();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                            size: 20,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            themeProvider.isDarkMode ? 'تم التبديل للثيم الغامق' : 'تم التبديل للثيم الفاتح',
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
         ),
       ),
+    ),
     );
   }
 
@@ -1082,6 +1153,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           ),
           actions: [
+            // مفتاح تبديل الثيم الفاتح/الغامق
+            Consumer<AppTheme>(
+              builder: (context, themeProvider, child) => IconButton(
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Icon(
+                    themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                    key: ValueKey(themeProvider.isDarkMode),
+                    color: themeProvider.isDarkMode ? Colors.amber : Colors.indigo,
+                  ),
+                ),
+                tooltip: themeProvider.isDarkMode ? 'التبديل للثيم الفاتح' : 'التبديل للثيم الغامق',
+                onPressed: () async {
+                  await themeProvider.toggleTheme();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          themeProvider.isDarkMode ? 'تم التبديل للثيم الغامق' : 'تم التبديل للثيم الفاتح',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.refresh_rounded),
               tooltip: 'تحديث الحالة',

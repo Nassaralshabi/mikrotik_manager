@@ -264,7 +264,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(color: Colors.white))
+                        child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(context.theme.appColors.onPrimary)))
                     : const Text('حفظ وإضافة'),
               ),
             ],

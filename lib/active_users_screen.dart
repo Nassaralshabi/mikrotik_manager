@@ -116,7 +116,7 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).cardColor,
+        backgroundColor: context.theme.appColors.primary,
         elevation: 0,
         title: const Text('المستخدمين النشطين', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [

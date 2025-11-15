@@ -355,11 +355,11 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
           content: DropdownButtonFormField<String>(
             style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
             dropdownColor: Colors.white,
-            hint: const Text('اختر الفئة', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
+            hint: Text('اختر الفئة', style: TextStyle(color: context.theme.appColors.muted, fontWeight: FontWeight.bold)),
             items: units.map((unit) {
               return DropdownMenuItem<String>(
                 value: unit['id'],
-                child: Text(unit['name'], style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                child: Text(unit['name'], style: TextStyle(color: context.theme.appColors.onSurface, fontWeight: FontWeight.bold)),
               );
             }).toList(),
             onChanged: (value) {
@@ -528,7 +528,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                 decoration: const InputDecoration(
                     labelText: 'الفئة (البروفايل)',
                     border: OutlineInputBorder()),
-                hint: const Text('اختر فئة', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
+                hint: Text('اختر فئة', style: TextStyle(color: context.theme.appColors.muted, fontWeight: FontWeight.bold)),
                 items: widget.profiles
                     .map((p) => DropdownMenuItem(
                         value: p['name'] as String,

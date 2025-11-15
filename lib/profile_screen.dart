@@ -61,7 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.all(16.0),
       child: ListView(
         children: [
-          const Icon(Icons.account_circle, size: 100, color: Colors.deepOrange),
+          Icon(Icons.account_circle, size: 100, color: context.theme.appColors.primary),
           const SizedBox(height: 16),
           _buildInfoCard(
             context,
@@ -123,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.warning_amber_rounded, size: 80, color: Colors.amber),
+            Icon(Icons.warning_amber_rounded, size: 80, color: context.theme.appColors.warning),
             const SizedBox(height: 20),
             const Text(
               'لم يتم ربط الشبكة!',

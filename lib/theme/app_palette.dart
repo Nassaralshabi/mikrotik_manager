@@ -16,11 +16,11 @@ abstract class AppPalette {
   // Accent Colors
   static const accent = Color(0xFFFE2472); // Label/Pink
   
-  // Status Colors
-  static const success = Color(0xFF4CAF50);
-  static const warning = Color(0xFFFF9800);
-  static const error = Color(0xFFF44336);
-  static const info = Color(0xFF00BCD4);
+  // Status Colors - محسّنة للتباين العالي
+  static const success = Color(0xFF10B981);  // أخضر ساطع
+  static const warning = Color(0xFFF59E0B);  // برتقالي/ذهبي
+  static const error = Color(0xFFEF4444);    // أحمر ساطع
+  static const info = Color(0xFF3B82F6);     // أزرق ساطع
   
   // Neutral Colors
   static const defaultColor = Color(0xFFDCDCDC);
@@ -57,14 +57,21 @@ abstract class AppPalette {
   static const socialTwitter = Color(0xFF5BC0DE);
   static const socialDribbble = Color(0xFFEA4C89);
   
-  // Dark Theme Colors
-  static const darkBackground = Color(0xFF1A1329);
-  static const darkSurface = Color(0xFF2D213F);
-  static const darkCard = Color(0xFF2D213F);
+  // Dark Theme Colors - محسّنة للتباين العالي
+  static const darkBackground = Color(0xFF0A0514);    // بنفسجي داكن جداً - مريح للعين
+  static const darkSurface = Color(0xFF1A1329);       // بنفسجي داكن متوسط
+  static const darkCard = Color(0xFFFFFFFF);          // أبيض ناصع للبطاقات
+  static const darkCardSecondary = Color(0xFFF8F9FA); // أوف وايت للبطاقات الثانوية
+  static const darkCardInteractive = Color(0xFFEFF2F7); // رمادي فاتح جداً للبطاقات التفاعلية
   
-  // Text Colors
+  // Text Colors - محسّنة للتباين العالي
   static const textPrimary = Color(0xFF1F2937);
   static const textSecondary = Color(0xFF4B5563);
   static const textWhite = Color(0xFFFFFFFF);
   static const textMuted = Color(0xFFBDBDBD);
+  
+  // Text Colors for Dark Theme
+  static const textOnDarkCard = Color(0xFF1A1329);      // نص غامق على البطاقات البيضاء
+  static const textSecondaryOnDark = Color(0xFFE0E0E0); // نص ثانوي على الخلفية الداكنة
+  static const textSecondaryOnCard = Color(0xFF6B7280); // نص ثانوي على البطاقات
 }

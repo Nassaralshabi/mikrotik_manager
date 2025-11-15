@@ -490,7 +490,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const Icon(Icons.camera_alt_outlined,
-                              size: 80, color: Color(0xFF6b3fa0)),
+                              size: 80, color: context.theme.appColors.primary),
                           const SizedBox(height: 20),
                           Text(
                             'أدخل شروط المسح الضوئي للكروت',
