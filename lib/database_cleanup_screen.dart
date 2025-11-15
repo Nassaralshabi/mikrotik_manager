@@ -18,6 +18,8 @@ class _DatabaseCleanupScreenState extends State<DatabaseCleanupScreen> {
   int _currentStep = 0;
   List<String> _stepLogs = [];
   bool _backupCreated = false;
+  Map<String, int> _beforeStats = {};
+  Map<String, int> _afterStats = {};
   
   @override
   void initState() {
@@ -439,6 +441,41 @@ class _DatabaseCleanupScreenState extends State<DatabaseCleanupScreen> {
     );
   }
 
+  Future<void> _createBackup() async {
+    setState(() {
+      _stepLogs.add('💾 بدء إنشاء النسخة الاحتياطية...');
+    });
+
+    RouterOSClient? client;
+    try {
+      client = await MikrotikConnector.connect();
+      
+      // إنشاء اسم للنسخة الاحتياطية
+      final timestamp = DateTime.now().toIso8601String().split('T')[0];
+      final backupName = 'backup-before-cleanup-$timestamp';
+      
+      await client.talk(['/system/backup/save', '=name=$backupName']);
+      
+      setState(() {
+        _backupCreated = true;
+        _stepLogs.add('✅ تم إنشاء النسخة الاحتياطية: $backupName');
+      });
+
+      if (mounted) {
+        showSuccessSnackBar(context, 'تم إنشاء النسخة الاحتياطية بنجاح');
+      }
+    } catch (e) {
+      setState(() {
+        _stepLogs.add('❌ فشل إنشاء النسخة الاحتياطية: $e');
+      });
+      if (mounted) {
+        showErrorSnackBar(context, 'فشل في إنشاء النسخة الاحتياطية: $e');
+      }
+    } finally {
+      client?.close();
+    }
+  }
+
   void _showConfirmationDialog() {
     showDialog(
       context: context,
@@ -482,26 +519,152 @@ class _DatabaseCleanupScreenState extends State<DatabaseCleanupScreen> {
     );
   }
 
+  Future<void> _startCleanup() async {
+    setState(() {
+      _isRunning = true;
+      _currentStep = 0;
+      _stepLogs.add('🚀 بدء عملية تنظيف قاعدة البيانات...');
+    });
+
+    for (int i = 0; i < _steps.length; i++) {
+      if (!_isRunning) break;
+
+      setState(() {
+        _currentStep = i;
+        _stepLogs.add('⏳ تنفيذ: ${_steps[i].title}');
+      });
+
+      await _executeStep(_steps[i]);
+
+      if (_steps[i].delay > 0) {
+        setState(() {
+          _stepLogs.add('⏰ انتظار ${_steps[i].delay} ثانية...');
+        });
+        await Future.delayed(Duration(seconds: _steps[i].delay));
+      }
+
+      setState(() {
+        _stepLogs.add('✅ مكتمل: ${_steps[i].title}');
+      });
+    }
+
+    // عرض إحصائيات ما بعد التنظيف
+    await _loadAfterStats();
+
+    setState(() {
+      _isRunning = false;
+      _currentStep = _steps.length;
+      _stepLogs.add('═══════════════════════════════════════');
+      _stepLogs.add('🎉 اكتملت عملية التنظيف بنجاح!');
+      _stepLogs.add('📊 ملخص النتائج:');
+      if (_beforeStats.isNotEmpty && _afterStats.isNotEmpty) {
+        final deletedUsers = _beforeStats['users']! - _afterStats['users']!;
+        final deletedSessions = _beforeStats['sessions']! - _afterStats['sessions']!;
+        final deletedLogs = _beforeStats['logs']! - _afterStats['logs']!;
+        _stepLogs.add('🗑️ حُذف $deletedUsers مستخدم');
+        _stepLogs.add('🗑️ حُذف $deletedSessions جلسة');
+        _stepLogs.add('🗑️ حُذف $deletedLogs سجل');
+      }
+      _stepLogs.add('═══════════════════════════════════════');
+    });
+
+    if (mounted) {
+      showSuccessSnackBar(context, 'اكتملت عملية التنظيف بنجاح! 🎉');
+    }
+  }
+
+  Future<void> _executeStep(CleanupStep step) async {
+    RouterOSClient? client;
+    try {
+      client = await MikrotikConnector.connect();
+      
+      if (step.isReboot) {
+        await client.talk([step.command]);
+        setState(() {
+          _stepLogs.add('🔄 تم إرسال أمر إعادة التشغيل...');
+        });
+        return;
+      }
+
+      final response = await client.talk([step.command]);
+      
+      if (step.requiresConfirmation) {
+        // إرسال تأكيد للأوامر التي تحتاج تأكيد
+        await client.talk(['/y']);
+      }
+
+      setState(() {
+        _stepLogs.add('📝 النتيجة: ${response.length} استجابة');
+      });
+
+    } catch (e) {
+      setState(() {
+        _stepLogs.add('⚠️ خطأ: $e');
+      });
+    } finally {
+      client?.close();
+    }
+  }
+
+  Future<void> _loadAfterStats() async {
+    RouterOSClient? client;
+    try {
+      client = await MikrotikConnector.connect();
+      
+      final usersResponse = await client.talk(['/tool/user-manager/user/print']);
+      final sessionsResponse = await client.talk(['/tool/user-manager/session/print']);
+      final logsResponse = await client.talk(['/tool/user-manager/log/print']);
+      
+      setState(() {
+        _afterStats = {
+          'users': usersResponse.length,
+          'sessions': sessionsResponse.length,
+          'logs': logsResponse.length,
+        };
+      });
+      
+    } catch (e) {
+      setState(() {
+        _stepLogs.add('⚠️ فشل في جلب الإحصائيات النهائية: $e');
+      });
+    } finally {
+      client?.close();
+    }
+  }
+
+  void _stopCleanup() {
+    setState(() {
+      _isRunning = false;
+      _stepLogs.add('⏹️ تم إيقاف العملية من قبل المستخدم');
+    });
+  }
+
   Future<void> _loadDatabaseInfo() async {
     RouterOSClient? client;
     try {
       client = await MikrotikConnector.connect();
       
       // الحصول على معلومات User Manager
-      final usersResponse = await client.talk(['/tool/user-manager/user/print', '=count-only=']);
-      final sessionsResponse = await client.talk(['/tool/user-manager/session/print', '=count-only=']);
-      final logsResponse = await client.talk(['/tool/user-manager/log/print', '=count-only=']);
+      final usersResponse = await client.talk(['/tool/user-manager/user/print']);
+      final sessionsResponse = await client.talk(['/tool/user-manager/session/print']);
+      final logsResponse = await client.talk(['/tool/user-manager/log/print']);
       
       setState(() {
-        _stepLogs.add('[${DateTime.now().toString().split('.')[0]}] معلومات قاعدة البيانات:');
-        _stepLogs.add('[${DateTime.now().toString().split('.')[0]}] عدد المستخدمين: ${usersResponse.length}');
-        _stepLogs.add('[${DateTime.now().toString().split('.')[0]}] عدد الجلسات: ${sessionsResponse.length}');
-        _stepLogs.add('[${DateTime.now().toString().split('.')[0]}] عدد السجلات: ${logsResponse.length}');
+        _beforeStats = {
+          'users': usersResponse.length,
+          'sessions': sessionsResponse.length,
+          'logs': logsResponse.length,
+        };
+        _stepLogs.add('📊 إحصائيات قاعدة البيانات الحالية:');
+        _stepLogs.add('👥 عدد المستخدمين: ${usersResponse.length}');
+        _stepLogs.add('🔗 عدد الجلسات: ${sessionsResponse.length}');
+        _stepLogs.add('📝 عدد السجلات: ${logsResponse.length}');
+        _stepLogs.add('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       });
       
     } catch (e) {
       setState(() {
-        _stepLogs.add('[${DateTime.now().toString().split('.')[0]}] فشل في جلب معلومات قاعدة البيانات: $e');
+        _stepLogs.add('❌ فشل في جلب معلومات قاعدة البيانات: $e');
       });
     } finally {
       client?.close();
