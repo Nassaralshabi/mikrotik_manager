@@ -261,7 +261,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _addUser,
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(context.theme.appColors.onPrimary)))

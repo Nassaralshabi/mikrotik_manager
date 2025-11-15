@@ -71,7 +71,7 @@ class _BackupSystemScreenState extends State<BackupSystemScreen> {
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation(context.theme.appColors.onPrimary),
+                valueColor: AlwaysStoppedAnimation(Colors.white),
               ),
             ),
             SizedBox(width: 16),
@@ -240,11 +240,11 @@ class _BackupSystemScreenState extends State<BackupSystemScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning, color: context.theme.appColors.warning),
-            SizedBox(width: 8),
-            Text('تحذير'),
+            Icon(Icons.warning, color: Colors.orange),
+            const SizedBox(width: 8),
+            const Text('تحذير'),
           ],
         ),
         content: const Text(
@@ -544,16 +544,16 @@ class _BackupSystemScreenState extends State<BackupSystemScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.backup, size: 80, color: context.theme.appColors.muted),
+            Icon(Icons.backup, size: 80, color: Colors.grey),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'لا توجد نسخ احتياطية',
-              style: TextStyle(fontSize: 20, color: context.theme.appColors.muted),
+              style: TextStyle(fontSize: 20, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'اضغط على الزر أدناه لإنشاء نسخة جديدة',
-              style: TextStyle(color: context.theme.appColors.muted),
+              style: TextStyle(color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -597,7 +597,7 @@ class _BackupSystemScreenState extends State<BackupSystemScreen> {
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(context.theme.appColors.onSurface),
+                  valueColor: AlwaysStoppedAnimation(Colors.white),
                 ),
               ),
             )
