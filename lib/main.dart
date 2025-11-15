@@ -24,6 +24,7 @@ import 'stats_screen.dart';
 import 'mikrotik_connector.dart';
 import 'backup_system_screen.dart';
 import 'active_users_screen.dart';
+import 'database_cleanup_screen.dart';
 import 'snackbar_helpers.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_palette.dart';
@@ -1070,6 +1071,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const NetworkDoctorScreen()));
+        },
+      ),
+      ServiceItem(
+        title: 'تنظيف قاعدة البيانات',
+        icon: Icons.cleaning_services,
+        color: Colors.deepOrange,
+        onTap: () {
+          Navigator.of(context)
+              .push(CustomPageRoute(builder: (context) => const DatabaseCleanupScreen()));
         },
       ),
       ServiceItem(
