@@ -383,7 +383,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                Image.asset('assets/images/wifi_logo.png', width: 48, height: 48),
+                Icon(Icons.router, size: 64, color: context.theme.appColors.primary),
                 const SizedBox(height: 24),
                 Text(
                   'إدارة شبكتك بسهولة وأمان',
@@ -444,10 +444,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               ],
             ),
           ),
-        ],
-      ),
-      // مفتاح تبديل الثيم في الزاوية العلوية اليسرى
-      Positioned(
+        ),
+            // مفتاح تبديل الثيم في الزاوية العلوية اليسرى
+            Positioned(
         top: 50,
         left: 20,
         child: Consumer<AppTheme>(
@@ -506,8 +505,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             ),
           ),
         ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
