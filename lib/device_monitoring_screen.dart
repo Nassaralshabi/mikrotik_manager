@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:router_os_client/router_os_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'snackbar_helpers.dart';
+import 'theme/app_theme.dart';
 import 'package:uuid/uuid.dart';
 
 enum DeviceStatus { online, offline }
@@ -190,7 +191,7 @@ class _DeviceMonitoringScreenState extends State<DeviceMonitoringScreen> {
               // Removed 'disconnected' option
               const PopupMenuItem<String>(
                 value: 'all',
-                child: ListTile(leading: Icon(Icons.devices), title: Text('جميع الأجهزة', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold))),
+                child: ListTile(leading: Icon(Icons.devices), title: Text('جميع الأجهزة', style: TextStyle(color: context.theme.appColors.onSurface, fontWeight: FontWeight.bold))),
               ),
             ],
           ),
@@ -203,11 +204,22 @@ class _DeviceMonitoringScreenState extends State<DeviceMonitoringScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.devices_other, size: 80, color: Colors.grey),
+                      Icon(Icons.devices_other, size: 80, color: context.theme.appColors.muted),
                       const SizedBox(height: 16),
-                      const Text('لا توجد أجهزة للمراقبة', style: TextStyle(fontSize: 22, color: Colors.white)),
+                      Text(
+                        'لا توجد أجهزة للمراقبة',
+                        style: TextStyle(
+                          fontSize: 22,
+                          color: Theme.of(context).textTheme.titleLarge?.color ?? context.theme.appColors.onSurface,
+                        ),
+                      ),
                       const SizedBox(height: 8),
-                      const Text('اضغط على زر التحديث لجلب الأجهزة', style: TextStyle(color: Colors.white)),
+                      Text(
+                        'اضغط على زر التحديث لجلب الأجهزة',
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyMedium?.color ?? context.theme.appColors.onSurface,
+                        ),
+                      ),
                     ],
                   ),
                 )
@@ -218,19 +230,21 @@ class _DeviceMonitoringScreenState extends State<DeviceMonitoringScreen> {
                     final device = _displayedDevices[index];
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 4.0),
-                      color: device.status == DeviceStatus.online ? Colors.green.shade800.withAlpha((255 * 0.8).round()) : Colors.grey.shade700.withAlpha((255 * 0.8).round()),
+                      color: device.status == DeviceStatus.online 
+                          ? context.theme.appColors.success.withOpacity(0.8) 
+                          : context.theme.appColors.muted.withOpacity(0.8),
                       child: ListTile(
                         leading: Icon(
                           device.status == DeviceStatus.online ? Icons.circle : Icons.circle_outlined,
-                          color: device.status == DeviceStatus.online ? Colors.greenAccent : Colors.grey,
+                          color: device.status == DeviceStatus.online ? context.theme.appColors.success : context.theme.appColors.muted,
                         ),
                         title: Text(
                           device.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: context.theme.appColors.onSurface),
                         ),
                         subtitle: Text(
                           device.ip,
-                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                          style: TextStyle(color: context.theme.appColors.onSurface.withOpacity(0.8), fontSize: 12),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -238,13 +252,13 @@ class _DeviceMonitoringScreenState extends State<DeviceMonitoringScreen> {
                             Text(
                               device.status == DeviceStatus.online ? 'متصل' : 'غير متصل',
                               style: TextStyle(
-                                color: device.status == DeviceStatus.online ? Colors.greenAccent : Colors.grey,
+                                color: device.status == DeviceStatus.online ? context.theme.appColors.success : context.theme.appColors.muted,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             if (device.status == DeviceStatus.offline)
                               IconButton(
-                                icon: const Icon(Icons.refresh, color: Colors.orange),
+                                icon: Icon(Icons.refresh, color: context.theme.appColors.warning),
                                 onPressed: () => _checkSingleDevice(device),
                                 tooltip: 'فحص الجهاز',
                               ),

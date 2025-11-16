@@ -357,7 +357,7 @@ class _QahtaniLinkScreenState extends State<QahtaniLinkScreen> {
               child: Text(_errorMessage!,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                      color: Colors.redAccent, fontSize: 16)),
+                      color: Colors.redAccent, fontSize: 12)),
             ),
           if (_isAwaitingCode)
             Text(_statusMessage,

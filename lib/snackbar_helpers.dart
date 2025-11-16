@@ -1,22 +1,34 @@
 import 'package:flutter/material.dart';
+import 'theme/app_theme.dart';
 
 void showErrorSnackBar(BuildContext context, String message) {
   if (!context.mounted) return;
+  final theme = context.theme;
+  final appColors = theme.appColors;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Row(
         children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 24),
+          Icon(Icons.error_outline, color: appColors.onError, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(fontSize: 14, height: 1.5),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                    color: appColors.onError,
+                    height: 1.5,
+                    fontSize: 14,
+                  ) ??
+                  TextStyle(
+                    color: appColors.onError,
+                    height: 1.5,
+                    fontSize: 14,
+                  ),
             ),
           ),
         ],
       ),
-      backgroundColor: Colors.redAccent,
+      backgroundColor: appColors.error,
       duration: const Duration(seconds: 5),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
@@ -25,7 +37,7 @@ void showErrorSnackBar(BuildContext context, String message) {
       margin: const EdgeInsets.all(16),
       action: SnackBarAction(
         label: 'إغلاق',
-        textColor: Colors.white,
+        textColor: appColors.onError,
         onPressed: () {},
       ),
     ),
@@ -34,21 +46,32 @@ void showErrorSnackBar(BuildContext context, String message) {
 
 void showSuccessSnackBar(BuildContext context, String message) {
   if (!context.mounted) return;
+  final theme = context.theme;
+  final appColors = theme.appColors;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Row(
         children: [
-          const Icon(Icons.check_circle_outline, color: Colors.white, size: 24),
+          Icon(Icons.check_circle_outline, color: appColors.onSuccess, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(fontSize: 14, height: 1.5),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                    color: appColors.onSuccess,
+                    height: 1.5,
+                    fontSize: 14,
+                  ) ??
+                  TextStyle(
+                    color: appColors.onSuccess,
+                    height: 1.5,
+                    fontSize: 14,
+                  ),
             ),
           ),
         ],
       ),
-      backgroundColor: const Color(0xFF4CAF50),
+      backgroundColor: appColors.success,
       duration: const Duration(seconds: 3),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(

@@ -190,10 +190,10 @@ class _SavedFilesScreenState extends State<SavedFilesScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _savedFiles.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'لا توجد ملفات محفوظة.',
-                    style: const TextStyle(fontSize: 18, color: Colors.white),
+                    style: TextStyle(fontSize: 18, color: Theme.of(context).textTheme.titleMedium?.color ?? Colors.black87),
                   ),
                 )
               : ListView.builder(

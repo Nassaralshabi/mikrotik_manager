@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:router_os_client/router_os_client.dart';
+import 'theme/app_theme.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'mikrotik_connector.dart';
@@ -803,40 +804,41 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
                 const SizedBox(height: 16),
               ],
 
-              // GridView للبطاقات الفرعية
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                childAspectRatio: 1.2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                children: [
-                  _buildInfoCard(
-                    'مدة التشغيل',
-                    _formatUptime(_uptime),
-                    Icons.timer,
-                    Colors.blue,
-                  ),
-                  _buildInfoCard(
-                    'المستخدمين النشطين',
-                    '$_activeUsers من $_totalUsers',
-                    Icons.people,
-                    Colors.green,
-                  ),
-                  _buildInfoCard(
-                    'سرعة النت',
-                    '${_formatSpeed(_rxBitsPerSecond)} ⬇\n${_formatSpeed(_txBitsPerSecond)} ⬆',
-                    Icons.speed,
-                    Colors.cyan,
-                  ),
-                  _buildInfoCard(
-                    'التخزين',
-                    '${_formatBytes(_totalHddSpace - _freeHddSpace)} من ${_formatBytes(_totalHddSpace)}\n${_calculatePercentage(_freeHddSpace, _totalHddSpace).toStringAsFixed(1)}%',
-                    Icons.storage,
-                    Colors.orange,
-                  ),
-                ],
+              // ListView الأفقي للبطاقات الفرعية
+              SizedBox(
+                height: 140,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _buildInfoCardHorizontal(
+                      'مدة التشغيل',
+                      _formatUptime(_uptime),
+                      Icons.timer,
+                      Colors.blue,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildInfoCardHorizontal(
+                      'المستخدمين النشطين',
+                      '$_activeUsers من $_totalUsers',
+                      Icons.people,
+                      Colors.green,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildInfoCardHorizontal(
+                      'سرعة النت',
+                      '${_formatSpeed(_rxBitsPerSecond)} ⬇\n${_formatSpeed(_txBitsPerSecond)} ⬆',
+                      Icons.speed,
+                      Colors.cyan,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildInfoCardHorizontal(
+                      'التخزين',
+                      '${_formatBytes(_totalHddSpace - _freeHddSpace)} من ${_formatBytes(_totalHddSpace)}\n${_calculatePercentage(_freeHddSpace, _totalHddSpace).toStringAsFixed(1)}%',
+                      Icons.storage,
+                      Colors.orange,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -1103,7 +1105,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: isAlert ? Colors.red.withOpacity(0.9) : const Color(0xFFB39DDB),
+              color: isAlert ? context.theme.appColors.error.withOpacity(0.9) : context.theme.appColors.secondary,
               borderRadius: BorderRadius.circular(8),
               boxShadow: isAlert ? [
                 BoxShadow(
@@ -1291,7 +1293,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFB39DDB),
+              color: context.theme.appColors.secondary,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -1311,6 +1313,54 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCardHorizontal(String title, String value, IconData icon, Color color) {
+    return Container(
+      width: 160,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFB39DDB),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -1528,7 +1578,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isAlert ? color.withOpacity(0.9) : const Color(0xFFB39DDB),
+                  color: isAlert ? color.withOpacity(0.9) : context.theme.appColors.secondary,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -1584,7 +1634,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
                         return Text(
                           '${value.toInt()}$unit',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7) ?? Colors.black45,
                             fontSize: 12,
                           ),
                         );
@@ -1678,7 +1728,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.6),
+            color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6) ?? Colors.black54,
           ),
         ),
         const SizedBox(height: 4),

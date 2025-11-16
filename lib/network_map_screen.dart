@@ -268,13 +268,13 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
               TextFormField(
                 controller: nameController,
                 decoration: const InputDecoration(labelText: 'اسم الجهاز (مثال: صحن رئيسي)'),
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
                 validator: (v) => v!.isEmpty ? 'الحقل مطلوب' : null,
               ),
               TextFormField(
                 controller: ipController,
                 decoration: const InputDecoration(labelText: 'عنوان IP'),
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
                 validator: (v) => v!.isEmpty ? 'الحقل مطلوب' : null,
               ),
             ],
@@ -617,7 +617,7 @@ class _NetworkMapScreenState extends State<NetworkMapScreen> {
           const SizedBox(height: 16),
           const Text('الخريطة فارغة', style: TextStyle(fontSize: 22)),
           const SizedBox(height: 8),
-          const Text('ابدأ ببناء خريطة شبكتك الآن', style: TextStyle(color: Colors.white)),
+          Text('ابدأ ببناء خريطة شبكتك الآن', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87)),
           const SizedBox(height: 20),
           ElevatedButton.icon(
             onPressed: () => _showAddEditDialog(),

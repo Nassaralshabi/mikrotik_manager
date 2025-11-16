@@ -1,6 +1,7 @@
 // ملف: pdf_generator.dart
 
 import 'dart:io';
+import 'dart:typed_data';
 // --- ✨ إصلاح: تم تصحيح الأخطاء الإملائية في الـ import ---
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +14,7 @@ import 'pdf_templates_screen.dart';
 
 Future<Uint8List> _generatePdfInBackground(Map<String, dynamic> data) async {
   final cardUsernames = data['cardUsernames'] as List<String>;
-  final imagePath = data['imagePath'] as String;
+  final imageBytes = data['imageBytes'] as Uint8List;
   final textXRatio = data['textXRatio'] as double;
   final textYRatio = data['textYRatio'] as double;
   final cardsPerPage = data['cardsPerPage'] as int;
@@ -24,7 +25,6 @@ Future<Uint8List> _generatePdfInBackground(Map<String, dynamic> data) async {
 
 
   final doc = pw.Document();
-  final imageBytes = await File(imagePath).readAsBytes();
   final imageProvider = pw.MemoryImage(imageBytes);
 
   int step = cardsPerPage;
@@ -123,9 +123,14 @@ class PdfGenerator {
     );
 
     try {
+      final imageFile = File(template.imagePath);
+      if (!await imageFile.exists()) {
+        throw Exception('قالب PDF يفتقد إلى الصورة المرتبطة به.');
+      }
+
       final Map<String, dynamic> generationData = {
         'cardUsernames': cardUsernames,
-        'imagePath': template.imagePath,
+        'imageBytes': await imageFile.readAsBytes(),
         'textXRatio': template.textXRatio,
         'textYRatio': template.textYRatio,
         'cardsPerPage': template.cardsPerPage,
@@ -142,7 +147,7 @@ class PdfGenerator {
     } catch (e) {
       if(context.mounted) {
         Navigator.of(context).pop();
-        showErrorSnackBar(context, 'فشل إنشاء ملف PDF. تأكد من القالب وصلاحية الصورة.');
+        showErrorSnackBar(context, 'فشل إنشاء ملف PDF. تأكد من القالب وصلاحية الصورة.\nالسبب: $e');
       }
     }
   }

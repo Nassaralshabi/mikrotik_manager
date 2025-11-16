@@ -61,7 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.all(16.0),
       child: ListView(
         children: [
-          const Icon(Icons.account_circle, size: 100, color: Colors.deepOrange),
+          Icon(Icons.account_circle, size: 100, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 16),
           _buildInfoCard(
             context,
@@ -110,7 +110,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54),
         ),
       ),
     );
@@ -123,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.warning_amber_rounded, size: 80, color: Colors.amber),
+            Icon(Icons.warning_amber_rounded, size: 80, color: Colors.orange),
             const SizedBox(height: 20),
             const Text(
               'لم يتم ربط الشبكة!',
@@ -133,7 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 10),
             Text(
               'الرجاء الذهاب إلى شاشة "ربط الشبكة بـ م/نصار الشعبي" لإكمال عملية الربط أولاً.',
-              style: const TextStyle(fontSize: 16, color: Colors.white),
+              style: TextStyle(fontSize: 16, color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87),
               textAlign: TextAlign.center,
             ),
           ],

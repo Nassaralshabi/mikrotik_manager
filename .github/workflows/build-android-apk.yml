@@ -1,0 +1,262 @@
+name: Build Android Release APK
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'lib/**'
+      - 'android/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'lib/**'
+      - 'android/**'
+      - 'pubspec.yaml'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        type: choice
+        options:
+          - 'fat-apk'
+          - 'split-apk'
+          - 'both'
+        default: 'both'
+      upload_artifacts:
+        description: 'Upload APK artifacts'
+        required: false
+        type: boolean
+        default: true
+
+env:
+  FLUTTER_VERSION: '3.24.0'
+  JAVA_VERSION: '17'
+
+jobs:
+  build-info:
+    name: 📋 Prepare Build Info
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build_number: ${{ steps.version.outputs.build_number }}
+      commit_hash: ${{ steps.version.outputs.commit_hash }}
+      branch: ${{ steps.version.outputs.branch }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version info
+        id: version
+        run: |
+          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          BUILD_NUMBER=$(echo $VERSION | cut -d '+' -f 2)
+          VERSION_NAME=$(echo $VERSION | cut -d '+' -f 1)
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          BRANCH=${GITHUB_REF#refs/heads/}
+          
+          echo "version=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "commit_hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          
+          echo "📦 Version: $VERSION_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "🔢 Build Number: $BUILD_NUMBER" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 Commit: $COMMIT_HASH" >> $GITHUB_STEP_SUMMARY
+          echo "🌿 Branch: $BRANCH" >> $GITHUB_STEP_SUMMARY
+
+  build-fat-apk:
+    name: 🏗️ Build Fat APK (Universal)
+    runs-on: ubuntu-latest
+    needs: build-info
+    if: |
+      github.event_name == 'push' || 
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.build_type == 'fat-apk' || inputs.build_type == 'both'))
+    timeout-minutes: 30
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: 🐦 Set up Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get Flutter dependencies
+        run: flutter pub get
+
+      - name: 🔍 Verify Flutter installation
+        run: |
+          flutter --version
+          flutter doctor -v
+
+      - name: 🧹 Clean previous builds
+        run: flutter clean
+
+      - name: 🎨 Generate app icons
+        run: flutter pub run flutter_launcher_icons
+        continue-on-error: true
+
+      - name: 🏗️ Build Fat APK (Universal)
+        run: |
+          flutter build apk --release \
+            --target-platform android-arm,android-arm64,android-x64 \
+            --verbose
+        env:
+          FLUTTER_BUILD_NUMBER: ${{ needs.build-info.outputs.build_number }}
+          FLUTTER_BUILD_NAME: ${{ needs.build-info.outputs.version }}
+
+      - name: 📊 Get APK info
+        id: apk_info
+        run: |
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          if [ -f "$APK_PATH" ]; then
+            APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
+            APK_SIZE_BYTES=$(stat -c%s "$APK_PATH")
+            echo "size=$APK_SIZE" >> $GITHUB_OUTPUT
+            echo "size_bytes=$APK_SIZE_BYTES" >> $GITHUB_OUTPUT
+            echo "✅ Fat APK built successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "📦 Size: $APK_SIZE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ APK file not found!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: 📤 Upload Fat APK
+        if: |
+          success() && 
+          (github.event_name == 'push' || 
+           github.event_name == 'workflow_dispatch' && inputs.upload_artifacts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mikrotik-manager-v${{ needs.build-info.outputs.version }}-fat-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: 📝 Build summary
+        if: success()
+        run: |
+          echo "### 🎉 Build Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | \`${{ needs.build-info.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Number | \`${{ needs.build-info.outputs.build_number }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ needs.build-info.outputs.commit_hash }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| APK Size | ${{ steps.apk_info.outputs.size }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Type | Universal (Fat APK) |" >> $GITHUB_STEP_SUMMARY
+
+  build-split-apks:
+    name: 🏗️ Build Split APKs (Per ABI)
+    runs-on: ubuntu-latest
+    needs: build-info
+    if: |
+      github.event_name == 'workflow_dispatch' && 
+      (inputs.build_type == 'split-apk' || inputs.build_type == 'both')
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        abi: [armeabi-v7a, arm64-v8a, x86_64]
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: 🐦 Set up Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get Flutter dependencies
+        run: flutter pub get
+
+      - name: 🧹 Clean previous builds
+        run: flutter clean
+
+      - name: 🎨 Generate app icons
+        run: flutter pub run flutter_launcher_icons
+        continue-on-error: true
+
+      - name: 🏗️ Build Split APK for ${{ matrix.abi }}
+        run: |
+          flutter build apk --release \
+            --split-per-abi \
+            --target-platform android-${{ matrix.abi }} \
+            --verbose
+        env:
+          FLUTTER_BUILD_NUMBER: ${{ needs.build-info.outputs.build_number }}
+          FLUTTER_BUILD_NAME: ${{ needs.build-info.outputs.version }}
+
+      - name: 📊 Get APK info
+        id: apk_info
+        run: |
+          APK_PATH="build/app/outputs/flutter-apk/app-${{ matrix.abi }}-release.apk"
+          if [ -f "$APK_PATH" ]; then
+            APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
+            echo "size=$APK_SIZE" >> $GITHUB_OUTPUT
+            echo "✅ Split APK (${{ matrix.abi }}) built successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "📦 Size: $APK_SIZE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ APK file not found!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: 📤 Upload Split APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mikrotik-manager-v${{ needs.build-info.outputs.version }}-${{ matrix.abi }}-apk
+          path: build/app/outputs/flutter-apk/app-${{ matrix.abi }}-release.apk
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+  build-summary:
+    name: 📋 Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-info, build-fat-apk]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# 🎯 Mikrotik Manager Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Build Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: \`${{ needs.build-info.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number**: \`${{ needs.build-info.outputs.build_number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ needs.build-info.outputs.commit_hash }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: \`${{ needs.build-info.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Build Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Fat APK: ${{ needs.build-fat-apk.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📥 Download Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "Visit the [Actions tab](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) to download the APK files." >> $GITHUB_STEP_SUMMARY

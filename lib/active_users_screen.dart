@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:router_os_client/router_os_client.dart';
 import 'dart:async';
 import 'mikrotik_connector.dart';
+import 'theme/app_theme.dart';
 
 class ActiveUsersScreen extends StatefulWidget {
   const ActiveUsersScreen({super.key});
@@ -99,7 +100,7 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).cardColor,
+        backgroundColor: context.theme.appColors.primary,
         elevation: 0,
         title: const Text('المستخدمين النشطين', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
@@ -126,12 +127,12 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
+              Icon(Icons.error_outline, size: 64, color: context.theme.appColors.error),
               const SizedBox(height: 16),
               Text(
                 _errorMessage,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.redAccent, fontSize: 16),
+                style: TextStyle(color: context.theme.appColors.error, fontSize: 12),
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
@@ -171,14 +172,14 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Theme.of(context).primaryColor.withOpacity(0.8),
-            Theme.of(context).primaryColor.withOpacity(0.5),
+            context.theme.appColors.primary.withOpacity(0.8),
+            context.theme.appColors.primary.withOpacity(0.5),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).primaryColor.withOpacity(0.3),
+            color: context.theme.appColors.primary.withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -191,18 +192,18 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
             icon: Icons.people,
             label: 'النشطين الآن',
             value: '$_activeCount',
-            color: Colors.white,
+            color: context.theme.appColors.onPrimary,
           ),
           Container(
             width: 1,
             height: 60,
-            color: Colors.white.withOpacity(0.3),
+            color: context.theme.appColors.onSurface.withOpacity(0.3),
           ),
           _buildStatItem(
             icon: Icons.group,
             label: 'إجمالي المستخدمين',
             value: '$_totalUsers',
-            color: Colors.white,
+            color: context.theme.appColors.onPrimary,
           ),
         ],
       ),
@@ -250,13 +251,13 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
               Icon(
                 Icons.people_outline,
                 size: 80,
-                color: Colors.white.withOpacity(0.3),
+                color: context.theme.appColors.onSurface.withOpacity(0.3),
               ),
               const SizedBox(height: 16),
               Text(
                 'لا توجد مستخدمين نشطين حالياً',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7) ?? Colors.black54,
                   fontSize: 16,
                 ),
               ),
@@ -273,19 +274,19 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
           padding: const EdgeInsets.only(bottom: 12.0),
           child: Row(
             children: [
-              const Text(
+              Text(
                 'المتصلين حالياً',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: context.theme.appColors.onSurface,
                 ),
               ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.2),
+                  color: context.theme.appColors.primary.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -324,7 +325,7 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).primaryColor.withOpacity(0.2),
+          color: context.theme.appColors.primary.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -351,9 +352,9 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.person,
-                    color: Colors.white,
+                    color: context.theme.appColors.onPrimary,
                     size: 28,
                   ),
                 ),
@@ -364,10 +365,10 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                     children: [
                       Text(
                         username,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: context.theme.appColors.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -375,18 +376,18 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.location_on,
                             size: 14,
-                            color: Color(0xFFB39DDB),
+                            color: context.theme.appColors.secondary,
                           ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               ipAddress,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFFB39DDB),
+                                color: context.theme.appColors.secondary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -397,17 +398,17 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.access_time,
                             size: 14,
-                            color: Color(0xFF81C784),
+                            color: context.theme.appColors.success,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             _formatUptime(uptime),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF81C784),
+                              color: context.theme.appColors.success,
                             ),
                           ),
                         ],
@@ -417,7 +418,7 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                 ),
                 Icon(
                   Icons.chevron_right,
-                  color: Colors.white.withOpacity(0.3),
+                  color: context.theme.appColors.onSurface.withOpacity(0.3),
                 ),
               ],
             ),
@@ -449,12 +450,12 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                     size: 28,
                   ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'تفاصيل المستخدم',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: context.theme.appColors.onSurface,
                     ),
                   ),
                 ],
@@ -471,7 +472,7 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                         child: Text(
                           entry.key,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
+                            color: context.theme.appColors.onSurface.withOpacity(0.6),
                             fontSize: 14,
                           ),
                         ),
@@ -480,8 +481,8 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                         flex: 3,
                         child: Text(
                           entry.value.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.theme.appColors.onSurface,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),

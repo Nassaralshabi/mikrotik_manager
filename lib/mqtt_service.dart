@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'main.dart' show scaffoldMessengerKey;
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -163,5 +164,3 @@ class MqttService with ChangeNotifier {
   }
 }
 
-// مفتاح عام للوصول إلى ScaffoldMessenger من أي مكان
-final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
