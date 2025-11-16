@@ -4,6 +4,18 @@ import 'package:router_os_client/router_os_client.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'mikrotik_connector.dart';
 import 'snackbar_helpers.dart';
+import 'active_users_screen.dart';
+import 'add_user_screen.dart';
+import 'bulk_add_screen.dart';
+import 'card_list_screen.dart';
+import 'network_tools_screen.dart';
+import 'network_map_screen.dart';
+import 'network_doctor_screen.dart';
+import 'rogue_dhcp_detector_screen.dart';
+import 'cards_statistics_screen.dart';
+import 'device_monitoring_screen.dart';
+import 'backup_system_screen.dart';
+import 'profile_screen.dart';
 
 class SystemDashboardScreen extends StatefulWidget {
   const SystemDashboardScreen({super.key});
@@ -624,57 +636,49 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
 
               // GridView للأزرار
               GridView.count(
+                crossAxisCount: 4,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                childAspectRatio: 1.5,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 1.0,
                 children: [
-                  _buildActionButton(
-                    'الأكتشف',
-                    Icons.person_search,
-                    theme.primaryColor,
-                    () {
-                      // TODO: Navigate to HotspotActiveUsersScreen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('قريباً...')),
-                      );
-                    },
-                  ),
-                  _buildActionButton(
-                    'البروديائد',
-                    Icons.wifi_tethering,
-                    Colors.grey,
-                    () {
-                      // TODO
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('قريباً...')),
-                      );
-                    },
-                  ),
-                  _buildActionButton(
-                    'يوزر متجر',
-                    Icons.group,
-                    Colors.grey,
-                    () {
-                      // TODO
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('قريباً...')),
-                      );
-                    },
-                  ),
-                  _buildActionButton(
-                    'هوتسبوت',
-                    Icons.wifi,
-                    theme.primaryColor,
-                    () {
-                      // TODO
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('قريباً...')),
-                      );
-                    },
-                  ),
+                  _buildActionButtonGrid('المستخدمين النشطين', Icons.people_alt, Colors.green, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const ActiveUsersScreen()));
+                  }),
+                  _buildActionButtonGrid('إضافة مستخدم', Icons.person_add, Colors.blue, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const AddUserScreen()));
+                  }),
+                  _buildActionButtonGrid('إضافة جماعية', Icons.group_add, Colors.teal, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const BulkAddScreen()));
+                  }),
+                  _buildActionButtonGrid('قائمة الكروت', Icons.credit_card, Colors.purple, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const CardListScreen()));
+                  }),
+                  _buildActionButtonGrid('أدوات الشبكة', Icons.build, Colors.orange, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const NetworkToolsScreen()));
+                  }),
+                  _buildActionButtonGrid('خريطة الشبكة', Icons.device_hub, Colors.cyan, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const NetworkMapScreen()));
+                  }),
+                  _buildActionButtonGrid('فحص الشبكة', Icons.health_and_safety, Colors.green.shade700, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const NetworkDoctorScreen()));
+                  }),
+                  _buildActionButtonGrid('كشف DHCP', Icons.security, Colors.red, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const RogueDhcpDetectorScreen()));
+                  }),
+                  _buildActionButtonGrid('إحصائيات الكروت', Icons.analytics, Colors.indigo, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const CardsStatisticsScreen()));
+                  }),
+                  _buildActionButtonGrid('مراقبة الأجهزة', Icons.monitor, Colors.deepOrange, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const DeviceMonitoringScreen()));
+                  }),
+                  _buildActionButtonGrid('النسخ الاحتياطي', Icons.backup, Colors.blueGrey, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const BackupSystemScreen()));
+                  }),
+                  _buildActionButtonGrid('الإعدادات', Icons.settings, theme.primaryColor, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
+                  }),
                 ],
               ),
               const SizedBox(height: 16),
@@ -925,6 +929,42 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtonGrid(String title, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: color.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
           ],
         ),
