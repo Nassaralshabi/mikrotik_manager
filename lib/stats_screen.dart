@@ -349,6 +349,7 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildBody() {
+    final colorScheme = Theme.of(context).colorScheme;
     if (_isLoading) {
       return Center(
         child: Column(
@@ -427,6 +428,7 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildPieChart() {
+    final colorScheme = Theme.of(context).colorScheme;
     final download = _stats['dataDownloaded'] as double;
     final upload = _stats['dataUploaded'] as double;
     final total = download + upload;
@@ -464,7 +466,7 @@ class _StatsScreenState extends State<StatsScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.pie_chart, color: Theme.of(context).primaryColor),
+                Icon(Icons.pie_chart, color: colorScheme.primary),
                 const SizedBox(width: 12),
                 const Text(
                   'استخدام البيانات',
