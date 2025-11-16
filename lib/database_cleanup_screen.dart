@@ -118,9 +118,9 @@ class _DatabaseCleanupScreenState extends State<DatabaseCleanupScreen> {
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: Theme.of(context).brightness == Brightness.dark 
-            ? AppGradients.darkBackground 
-            : AppGradients.softBackground,
+          gradient: Theme.of(context).brightness == Brightness.dark
+              ? AppGradients.darkBackground(Theme.of(context).colorScheme)
+              : AppGradients.softBackground(Theme.of(context).colorScheme),
         ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),

@@ -315,8 +315,12 @@ class _StatsScreenState extends State<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
-      decoration: const BoxDecoration(gradient: AppGradients.softBackground),
+      decoration: BoxDecoration(
+        gradient: AppGradients.softBackground(colorScheme),
+      ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -349,13 +353,12 @@ class _StatsScreenState extends State<StatsScreen> {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
+          children: const [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
             Text(
               'جاري تحميل الإحصائيات...',
               style: TextStyle(
-                color: Theme.of(context).textTheme.bodyMedium?.color,
                 fontSize: 16,
               ),
             ),
@@ -374,14 +377,14 @@ class _StatsScreenState extends State<StatsScreen> {
               Icon(
                 Icons.error_outline,
                 size: 64,
-                color: Colors.redAccent,
+                color: colorScheme.error,
               ),
               const SizedBox(height: 16),
               Text(
                 _errorMessage,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.redAccent,
+                style: TextStyle(
+                  color: colorScheme.error,
                   fontSize: 12,
                 ),
               ),
@@ -401,7 +404,11 @@ class _StatsScreenState extends State<StatsScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_isRefreshing)
-          const LinearProgressIndicator(minHeight: 3),
+          LinearProgressIndicator(
+            minHeight: 3,
+            color: colorScheme.primary,
+            backgroundColor: colorScheme.surfaceVariant,
+          ),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -433,13 +440,13 @@ class _StatsScreenState extends State<StatsScreen> {
               Icon(
                 Icons.info_outline,
                 size: 48,
-                color: Theme.of(context).textTheme.bodyMedium?.color,
+                color: colorScheme.primary,
               ),
               const SizedBox(height: 16),
               Text(
                 'لا توجد بيانات استخدام متاحة',
                 style: TextStyle(
-                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                  color: colorScheme.onSurface.withOpacity(0.8),
                   fontSize: 16,
                 ),
               ),

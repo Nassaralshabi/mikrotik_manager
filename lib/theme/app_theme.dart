@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app_colors_extension.dart';
 import 'app_text_theme_extension.dart';
 import 'app_typography.dart';
-import 'app_palette.dart';
 
 /// Custom app theme with Material Kit Flutter colors and ThemeExtension support.
 /// Provides both light and dark theme configurations with smooth transitions.
@@ -25,6 +24,17 @@ import 'app_palette.dart';
 class AppTheme with ChangeNotifier {
   static const String _themeModeKey = 'theme_mode';
   ThemeMode _themeMode = ThemeMode.system;
+
+  static final _ThemeBundle _lightBundle = _buildThemeBundle(Brightness.light);
+  static final _ThemeBundle _darkBundle = _buildThemeBundle(Brightness.dark);
+
+  static final ThemeData light = _lightBundle.theme;
+  static final ThemeData dark = _darkBundle.theme;
+
+  static AppColorsExtension get _lightAppColors => _lightBundle.colors;
+  static AppColorsExtension get _darkAppColors => _darkBundle.colors;
+  static AppTextThemeExtension get _lightTextTheme => _lightBundle.texts;
+  static AppTextThemeExtension get _darkTextTheme => _darkBundle.texts;
 
   ThemeMode get themeMode => _themeMode;
 
@@ -80,295 +90,209 @@ class AppTheme with ChangeNotifier {
   /// Check if current theme is light
   bool get isLightMode => _themeMode == ThemeMode.light;
 
-  //
-  // Light theme (Material Kit Flutter style)
-  //
+  static _ThemeBundle _buildThemeBundle(Brightness brightness) {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: Colors.deepPurple,
+      brightness: brightness,
+    );
 
-  static final light = () {
-    final defaultTheme = ThemeData.light();
+    final textTheme = _buildTypography(scheme);
 
-    return defaultTheme.copyWith(
+    final base = ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: AppPalette.bgColorScreen,
-      colorScheme: ColorScheme.light(
-        primary: AppPalette.primary,
-        secondary: AppPalette.secondary,
-        error: AppPalette.error,
-        background: AppPalette.bgColorScreen,
-        surface: AppPalette.cardSurface,
-      ),
-      textTheme: TextTheme(
-        displayLarge: AppTypography.displayLarge.copyWith(color: AppPalette.textPrimary),
-        displayMedium: AppTypography.displayMedium.copyWith(color: AppPalette.textPrimary),
-        displaySmall: AppTypography.displaySmall.copyWith(color: AppPalette.textPrimary),
-        headlineLarge: AppTypography.headlineLarge.copyWith(color: AppPalette.textPrimary),
-        headlineMedium: AppTypography.headlineMedium.copyWith(color: AppPalette.textPrimary),
-        headlineSmall: AppTypography.headlineSmall.copyWith(color: AppPalette.textPrimary),
-        titleLarge: AppTypography.titleLarge.copyWith(color: AppPalette.textPrimary),
-        titleMedium: AppTypography.titleMedium.copyWith(color: AppPalette.textPrimary),
-        titleSmall: AppTypography.titleSmall.copyWith(color: AppPalette.textSecondary),
-        bodyLarge: AppTypography.bodyLarge.copyWith(color: AppPalette.textPrimary),
-        bodyMedium: AppTypography.bodyMedium.copyWith(color: AppPalette.textPrimary),
-        bodySmall: AppTypography.bodySmall.copyWith(color: AppPalette.textSecondary),
-        labelLarge: AppTypography.labelLarge,
-        labelMedium: AppTypography.labelMedium,
-        labelSmall: AppTypography.labelSmall,
-      ),
+      colorScheme: scheme,
+      fontFamily: 'Cairo',
+      visualDensity: VisualDensity.adaptivePlatformDensity,
+    );
+
+    final theme = base.copyWith(
+      colorScheme: scheme,
+      scaffoldBackgroundColor: scheme.background,
+      textTheme: textTheme,
       appBarTheme: AppBarTheme(
-        backgroundColor: AppPalette.primary,
-        foregroundColor: Colors.white,
+        backgroundColor:
+            brightness == Brightness.dark ? scheme.surfaceVariant : scheme.primary,
+        foregroundColor:
+            brightness == Brightness.dark ? scheme.onSurface : scheme.onPrimary,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: AppTypography.titleLarge.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          color: brightness == Brightness.dark ? scheme.onSurface : scheme.onPrimary,
+          fontWeight: FontWeight.w700,
+        ),
+        iconTheme: IconThemeData(
+          color: brightness == Brightness.dark ? scheme.onSurface : scheme.onPrimary,
         ),
       ),
       cardTheme: CardTheme(
+        color: scheme.surfaceVariant,
         elevation: 2,
+        margin: const EdgeInsets.all(12),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
         ),
-        color: AppPalette.cardSurface,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppPalette.primary,
-          foregroundColor: Colors.white,
-          elevation: 2,
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
+          textStyle: textTheme.labelLarge,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: AppTypography.labelLarge,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          elevation: 1.5,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: scheme.primary,
+          textStyle: textTheme.labelLarge,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        ),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.tertiary,
+        foregroundColor: scheme.onTertiary,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: scheme.primary,
+          hoverColor: scheme.primary.withOpacity(0.1),
+          highlightColor: scheme.primary.withOpacity(0.1),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppPalette.input,
+        fillColor: scheme.surfaceVariant,
+        labelStyle: textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+        hintStyle:
+            textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant.withOpacity(0.65)),
+        floatingLabelStyle: textTheme.bodyMedium?.copyWith(color: scheme.primary),
+        prefixIconColor: scheme.onSurfaceVariant,
+        suffixIconColor: scheme.onSurfaceVariant,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppPalette.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppPalette.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppPalette.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppPalette.error),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        // ألوان النص في الحقول النصية للثيم الفاتح
-        labelStyle: TextStyle(color: AppPalette.textSecondary),
-        hintStyle: TextStyle(color: AppPalette.muted),
-        prefixIconColor: AppPalette.textSecondary,
-        suffixIconColor: AppPalette.textSecondary,
-      ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppPalette.primary,
-        foregroundColor: Colors.white,
-      ),
-      extensions: [
-        _lightAppColors,
-        _lightTextTheme,
-      ],
-    );
-  }();
-
-  static final _lightAppColors = AppColorsExtension(
-    primary: AppPalette.primary,
-    onPrimary: Colors.white,
-    secondary: AppPalette.secondary,
-    onSecondary: Colors.black,
-    error: AppPalette.error,
-    onError: Colors.white,
-    success: AppPalette.success,
-    onSuccess: Colors.white,
-    warning: AppPalette.warning,
-    onWarning: Colors.white,
-    info: AppPalette.info,
-    onInfo: Colors.white,
-    background: AppPalette.bgColorScreen,
-    onBackground: AppPalette.textPrimary,
-    surface: AppPalette.cardSurface,
-    onSurface: AppPalette.textPrimary,
-    card: AppPalette.cardSurface,
-    onCard: AppPalette.textPrimary,
-    accent: AppPalette.accent,
-    muted: AppPalette.muted,
-    border: AppPalette.border,
-    inputBackground: AppPalette.input,
-  );
-
-  static final _lightTextTheme = AppTextThemeExtension(
-    displayLarge: AppTypography.displayLarge.copyWith(color: _lightAppColors.onBackground),
-    displayMedium: AppTypography.displayMedium.copyWith(color: _lightAppColors.onBackground),
-    displaySmall: AppTypography.displaySmall.copyWith(color: _lightAppColors.onBackground),
-    headlineLarge: AppTypography.headlineLarge.copyWith(color: _lightAppColors.onBackground),
-    headlineMedium: AppTypography.headlineMedium.copyWith(color: _lightAppColors.onBackground),
-    headlineSmall: AppTypography.headlineSmall.copyWith(color: _lightAppColors.onBackground),
-    titleLarge: AppTypography.titleLarge.copyWith(color: _lightAppColors.onBackground),
-    titleMedium: AppTypography.titleMedium.copyWith(color: _lightAppColors.onBackground),
-    titleSmall: AppTypography.titleSmall.copyWith(color: _lightAppColors.onSurface),
-    bodyLarge: AppTypography.bodyLarge.copyWith(color: _lightAppColors.onBackground),
-    bodyMedium: AppTypography.bodyMedium.copyWith(color: _lightAppColors.onBackground),
-    bodySmall: AppTypography.bodySmall.copyWith(color: _lightAppColors.muted),
-    labelLarge: AppTypography.labelLarge,
-    labelMedium: AppTypography.labelMedium,
-    labelSmall: AppTypography.labelSmall,
-  );
-
-  //
-  // Dark theme (Material Kit Flutter dark mode)
-  //
-
-  static final dark = () {
-    final defaultTheme = ThemeData.dark();
-
-    return defaultTheme.copyWith(
-      useMaterial3: true,
-      scaffoldBackgroundColor: AppPalette.darkBackground,
-      colorScheme: ColorScheme.dark(
-        primary: AppPalette.primaryLight,
-        secondary: AppPalette.secondaryLight,
-        error: AppPalette.error,
-        background: AppPalette.darkBackground,
-        surface: AppPalette.darkSurface,
-        onSurface: AppPalette.textOnDarkCard, // النص على السطوح
-        onBackground: Colors.white, // النص على الخلفية
-      ),
-      textTheme: TextTheme(
-        displayLarge: AppTypography.displayLarge.copyWith(color: Colors.white),
-        displayMedium: AppTypography.displayMedium.copyWith(color: Colors.white),
-        displaySmall: AppTypography.displaySmall.copyWith(color: Colors.white),
-        headlineLarge: AppTypography.headlineLarge.copyWith(color: Colors.white),
-        headlineMedium: AppTypography.headlineMedium.copyWith(color: Colors.white),
-        headlineSmall: AppTypography.headlineSmall.copyWith(color: Colors.white),
-        titleLarge: AppTypography.titleLarge.copyWith(color: Colors.white),
-        titleMedium: AppTypography.titleMedium.copyWith(color: Colors.white),
-        titleSmall: AppTypography.titleSmall.copyWith(color: AppPalette.textMuted),
-        bodyLarge: AppTypography.bodyLarge.copyWith(color: Colors.white),
-        bodyMedium: AppTypography.bodyMedium.copyWith(color: Colors.white),
-        bodySmall: AppTypography.bodySmall.copyWith(color: AppPalette.textMuted),
-        labelLarge: AppTypography.labelLarge.copyWith(color: Colors.white),
-        labelMedium: AppTypography.labelMedium.copyWith(color: Colors.white),
-        labelSmall: AppTypography.labelSmall.copyWith(color: Colors.white),
-      ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: AppPalette.darkBackground,  // استخدام الخلفية الجديدة
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        titleTextStyle: AppTypography.titleLarge.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      cardTheme: CardTheme(
-        elevation: 4,  // عمق أكبر للبطاقات البيضاء
-        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-        ),
-        color: AppPalette.darkCard,  // أبيض ناصع
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppPalette.primaryLight,
-          foregroundColor: Colors.black,
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          textStyle: AppTypography.labelLarge,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppPalette.darkCard, // أبيض للحقول النصية
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppPalette.border),
+          borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppPalette.border),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppPalette.primaryLight, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppPalette.error),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.error),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        // ألوان النص في الحقول النصية
-        labelStyle: TextStyle(color: AppPalette.textOnDarkCard),
-        hintStyle: TextStyle(color: AppPalette.textSecondaryOnCard),
-        prefixIconColor: AppPalette.textOnDarkCard,
-        suffixIconColor: AppPalette.textOnDarkCard,
-        // نص المحتوى في الحقول
-        floatingLabelStyle: TextStyle(color: AppPalette.primaryLight),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.error, width: 1.5),
+        ),
       ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppPalette.primaryLight,
-        foregroundColor: Colors.black,
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: scheme.primary,
+        selectionHandleColor: scheme.primary,
+        selectionColor: scheme.primary.withOpacity(0.35),
       ),
-      extensions: [
-        _darkAppColors,
-        _darkTextTheme,
-      ],
     );
-  }();
 
-  static final _darkAppColors = AppColorsExtension(
-    primary: AppPalette.primaryLight,
-    onPrimary: Colors.black,
-    secondary: AppPalette.secondaryLight,
-    onSecondary: Colors.black,
-    error: AppPalette.error,  // أحمر ساطع جديد
-    onError: Colors.white,
-    success: AppPalette.success,  // أخضر ساطع جديد
-    onSuccess: Colors.white,
-    warning: AppPalette.warning,  // برتقالي جديد
-    onWarning: Colors.black,
-    info: AppPalette.info,  // أزرق ساطع جديد
-    onInfo: Colors.white,  // تغيير للون النص على الأزرق
-    background: AppPalette.darkBackground,  // بنفسجي داكن جداً
-    onBackground: Colors.white,  // أبيض نقي على الخلفية الداكنة
-    surface: AppPalette.darkSurface,
-    onSurface: Colors.white,
-    card: AppPalette.darkCard,  // أبيض ناصع للبطاقات
-    onCard: AppPalette.textOnDarkCard,  // نص غامق على البطاقات البيضاء
-    accent: AppPalette.accent,
-    muted: AppPalette.textSecondaryOnDark,  // نص ثانوي محدث
-    border: AppPalette.muted,
-    inputBackground: AppPalette.darkSurface,
-  );
+    final colorsExtension = _buildColorsExtension(scheme);
+    final textExtension = _buildTextThemeExtension(scheme);
 
-  static final _darkTextTheme = AppTextThemeExtension(
-    displayLarge: AppTypography.displayLarge.copyWith(color: Colors.white),
-    displayMedium: AppTypography.displayMedium.copyWith(color: Colors.white),
-    displaySmall: AppTypography.displaySmall.copyWith(color: Colors.white),
-    headlineLarge: AppTypography.headlineLarge.copyWith(color: Colors.white),
-    headlineMedium: AppTypography.headlineMedium.copyWith(color: Colors.white),
-    headlineSmall: AppTypography.headlineSmall.copyWith(color: Colors.white),
-    titleLarge: AppTypography.titleLarge.copyWith(color: Colors.white),
-    titleMedium: AppTypography.titleMedium.copyWith(color: Colors.white),
-    titleSmall: AppTypography.titleSmall.copyWith(color: AppPalette.textSecondaryOnDark),  // نص ثانوي محدث
-    bodyLarge: AppTypography.bodyLarge.copyWith(color: Colors.white),
-    bodyMedium: AppTypography.bodyMedium.copyWith(color: Colors.white),
-    bodySmall: AppTypography.bodySmall.copyWith(color: AppPalette.textSecondaryOnDark),  // نص ثانوي محدث
-    labelLarge: AppTypography.labelLarge.copyWith(color: Colors.white),
-    labelMedium: AppTypography.labelMedium.copyWith(color: Colors.white),
-    labelSmall: AppTypography.labelSmall.copyWith(color: Colors.white),
-  );
+    return _ThemeBundle(
+      theme.copyWith(
+        extensions: <ThemeExtension<dynamic>>[
+          colorsExtension,
+          textExtension,
+        ],
+      ),
+      colorsExtension,
+      textExtension,
+    );
+  }
+
+  static TextTheme _buildTypography(ColorScheme scheme) {
+    return TextTheme(
+      displayLarge: AppTypography.displayLarge.copyWith(color: scheme.onBackground),
+      displayMedium: AppTypography.displayMedium.copyWith(color: scheme.onBackground),
+      displaySmall: AppTypography.displaySmall.copyWith(color: scheme.onBackground),
+      headlineLarge: AppTypography.headlineLarge.copyWith(color: scheme.onBackground),
+      headlineMedium: AppTypography.headlineMedium.copyWith(color: scheme.onBackground),
+      headlineSmall: AppTypography.headlineSmall.copyWith(color: scheme.onBackground),
+      titleLarge: AppTypography.titleLarge.copyWith(color: scheme.onSurface),
+      titleMedium: AppTypography.titleMedium.copyWith(color: scheme.onSurface),
+      titleSmall: AppTypography.titleSmall.copyWith(color: scheme.onSurfaceVariant),
+      bodyLarge: AppTypography.bodyLarge.copyWith(color: scheme.onSurface),
+      bodyMedium: AppTypography.bodyMedium.copyWith(color: scheme.onSurface),
+      bodySmall: AppTypography.bodySmall.copyWith(color: scheme.onSurfaceVariant),
+      labelLarge: AppTypography.labelLarge.copyWith(color: scheme.onSurface),
+      labelMedium: AppTypography.labelMedium.copyWith(color: scheme.onSurface),
+      labelSmall: AppTypography.labelSmall.copyWith(color: scheme.onSurfaceVariant),
+    );
+  }
+
+  static AppColorsExtension _buildColorsExtension(ColorScheme scheme) {
+    return AppColorsExtension(
+      primary: scheme.primary,
+      onPrimary: scheme.onPrimary,
+      secondary: scheme.secondary,
+      onSecondary: scheme.onSecondary,
+      error: scheme.error,
+      onError: scheme.onError,
+      success: scheme.tertiary,
+      onSuccess: scheme.onTertiary,
+      warning: scheme.secondaryContainer,
+      onWarning: scheme.onSecondaryContainer,
+      info: scheme.primaryContainer,
+      onInfo: scheme.onPrimaryContainer,
+      background: scheme.background,
+      onBackground: scheme.onBackground,
+      surface: scheme.surface,
+      onSurface: scheme.onSurface,
+      card: scheme.surfaceVariant,
+      onCard: scheme.onSurfaceVariant,
+      accent: scheme.secondary,
+      muted: scheme.onSurfaceVariant,
+      border: scheme.outlineVariant,
+      inputBackground: scheme.surfaceVariant,
+    );
+  }
+
+  static AppTextThemeExtension _buildTextThemeExtension(ColorScheme scheme) {
+    return AppTextThemeExtension(
+      displayLarge: AppTypography.displayLarge.copyWith(color: scheme.onBackground),
+      displayMedium: AppTypography.displayMedium.copyWith(color: scheme.onBackground),
+      displaySmall: AppTypography.displaySmall.copyWith(color: scheme.onBackground),
+      headlineLarge: AppTypography.headlineLarge.copyWith(color: scheme.onBackground),
+      headlineMedium: AppTypography.headlineMedium.copyWith(color: scheme.onBackground),
+      headlineSmall: AppTypography.headlineSmall.copyWith(color: scheme.onBackground),
+      titleLarge: AppTypography.titleLarge.copyWith(color: scheme.onSurface),
+      titleMedium: AppTypography.titleMedium.copyWith(color: scheme.onSurface),
+      titleSmall: AppTypography.titleSmall.copyWith(color: scheme.onSurfaceVariant),
+      bodyLarge: AppTypography.bodyLarge.copyWith(color: scheme.onSurface),
+      bodyMedium: AppTypography.bodyMedium.copyWith(color: scheme.onSurface),
+      bodySmall: AppTypography.bodySmall.copyWith(color: scheme.onSurfaceVariant),
+      labelLarge: AppTypography.labelLarge.copyWith(color: scheme.onSurface),
+      labelMedium: AppTypography.labelMedium.copyWith(color: scheme.onSurface),
+      labelSmall: AppTypography.labelSmall.copyWith(color: scheme.onSurfaceVariant),
+    );
+  }
+}
+
+class _ThemeBundle {
+  const _ThemeBundle(this.theme, this.colors, this.texts);
+
+  final ThemeData theme;
+  final AppColorsExtension colors;
+  final AppTextThemeExtension texts;
 }
 
 /// Extension to safely access AppColorsExtension from ThemeData.

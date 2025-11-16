@@ -27,16 +27,19 @@ import 'active_users_screen.dart';
 import 'database_cleanup_screen.dart';
 import 'snackbar_helpers.dart';
 import 'theme/app_theme.dart';
-import 'theme/app_palette.dart';
 import 'theme/app_gradients.dart';
 // -----------------------------------------
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final appTheme = AppTheme();
+  await appTheme.initialize();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => MqttService()),
-        ChangeNotifierProvider(create: (_) => AppTheme()..initialize()),
+        ChangeNotifierProvider.value(value: appTheme),
       ],
       child: const MyApp(),
     ),
@@ -45,66 +48,6 @@ void main() {
 
 // A global key for the ScaffoldMessenger
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
-
-/* snackbar helpers moved to snackbar_helpers.dart */
-void showErrorSnackBar(BuildContext context, String message) {
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(fontSize: 14, height: 1.5),
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: AppPalette.error,
-      duration: const Duration(seconds: 5),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      margin: const EdgeInsets.all(16),
-      action: SnackBarAction(
-        label: 'إغلاق',
-        textColor: Colors.white,
-        onPressed: () {},
-      ),
-    ),
-  );
-}
-
-void showSuccessSnackBar(BuildContext context, String message) {
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.check_circle_outline, color: Colors.white, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(fontSize: 14, height: 1.5),
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: AppPalette.success,
-      duration: const Duration(seconds: 3),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      margin: const EdgeInsets.all(16),
-    ),
-  );
-}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -370,12 +313,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
     return Container(
       decoration: BoxDecoration(
-        gradient: isDarkMode 
-          ? AppGradients.darkBackground 
-          : AppGradients.softBackground
+        gradient: isDarkMode
+            ? AppGradients.darkBackground(colorScheme)
+            : AppGradients.softBackground(colorScheme),
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -1027,12 +972,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     // --- قائمة الخدمات لتسهيل إدارتها ---
     final List<ServiceItem> services = [
       ServiceItem(
         title: 'إضافة كرت فردي',
         icon: Icons.person_add_alt_1,
-        color: AppPalette.primary,
+        color: colorScheme.primary,
         onTap: () {
           Navigator.of(context).push(CustomPageRoute(
             builder: (context) =>
@@ -1043,7 +990,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'إضافة كروت جماعية',
         icon: Icons.groups,
-        color: AppPalette.success,
+        color: colorScheme.secondary,
         onTap: () {
           Navigator.of(context).push(CustomPageRoute(
             builder: (context) =>
@@ -1054,7 +1001,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'ربط الشبكة',
         icon: Icons.link,
-        color: AppPalette.info,
+        color: colorScheme.tertiary,
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const QahtaniLinkScreen()));
@@ -1063,7 +1010,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'الإحصائيات',
         icon: Icons.bar_chart_rounded,
-        color: AppPalette.secondaryDark,
+        color: colorScheme.primaryContainer,
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const StatsScreen()));
@@ -1072,7 +1019,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'طبيب الشبكة',
         icon: Icons.local_hospital_outlined,
-        color: AppPalette.info,
+        color: colorScheme.secondaryContainer,
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const NetworkDoctorScreen()));
@@ -1081,7 +1028,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'تنظيف قاعدة البيانات',
         icon: Icons.cleaning_services,
-        color: Colors.deepOrange,
+        color: colorScheme.error,
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const DatabaseCleanupScreen()));
@@ -1090,7 +1037,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'الملفات المحفوظة',
         icon: Icons.folder_copy,
-        color: AppPalette.warning,
+        color: colorScheme.tertiaryContainer,
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const SavedFilesScreen()));
@@ -1099,7 +1046,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'إدارة قوالب PDF',
         icon: Icons.picture_as_pdf,
-        color: AppPalette.muted,
+        color: colorScheme.secondary,
         onTap: () {
           Navigator.of(context).push(
               CustomPageRoute(builder: (context) => PdfTemplatesScreen(profiles: _profiles)));
@@ -1108,7 +1055,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'استخراج الكروت',
         icon: Icons.document_scanner_outlined,
-        color: AppPalette.error,
+        color: colorScheme.errorContainer,
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const ExtractCardsScreen()));
@@ -1117,7 +1064,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'إحصائيات الكروت',
         icon: Icons.bar_chart,
-        color: AppPalette.primary,
+        color: colorScheme.primary,
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const CardsStatisticsScreen()));
@@ -1126,7 +1073,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'المستخدمين النشطين',
         icon: Icons.people_outline,
-        color: AppPalette.secondary,
+        color: colorScheme.secondary,
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const ActiveUsersScreen()));
@@ -1135,7 +1082,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'الملف الشخصي',
         icon: Icons.account_circle,
-        color: AppPalette.secondaryLight,
+        color: colorScheme.primaryContainer,
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const ProfileScreen()));
@@ -1144,7 +1091,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ServiceItem(
         title: 'النسخ الاحتياطي',
         icon: Icons.backup,
-        color: AppPalette.info,
+        color: colorScheme.secondaryContainer,
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const BackupSystemScreen()));
@@ -1153,7 +1100,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ];
 
     return Container(
-      decoration: const BoxDecoration(gradient: AppGradients.softBackground),
+      decoration: BoxDecoration(
+        gradient: AppGradients.softBackground(colorScheme),
+      ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -1164,8 +1113,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           leading: Padding(
             padding: const EdgeInsets.all(8.0),
             child: CircleAvatar(
-              backgroundColor: Theme.of(context).cardColor,
-              child: Icon(Icons.person_outline, color: context.theme.appColors.onSurface),
+              backgroundColor: theme.cardColor,
+              child: Icon(Icons.person_outline, color: colorScheme.onSurface),
             ),
           ),
           actions: [
@@ -1343,7 +1292,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         children: [
           Positioned.fill(
             child: Container(
-              decoration: BoxDecoration(gradient: AppGradients.cardOverlay),
+              decoration: BoxDecoration(
+                gradient: AppGradients.cardOverlay(Theme.of(context).colorScheme),
+              ),
             ),
           ),
           Padding(
