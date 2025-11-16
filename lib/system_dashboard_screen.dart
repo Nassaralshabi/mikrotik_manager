@@ -18,6 +18,7 @@ import 'backup_system_screen.dart';
 import 'profile_screen.dart';
 import 'cards_statistics_optimized_screen.dart';
 import 'connection_diagnostic_screen.dart';
+import 'remote_access_guide_screen.dart';
 
 class SystemDashboardScreen extends StatefulWidget {
   const SystemDashboardScreen({super.key});
@@ -618,6 +619,20 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         side: BorderSide(color: Colors.orange),
                         foregroundColor: Colors.orange,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (context) => const RemoteAccessGuideScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.school),
+                      label: const Text('دليل التحكم عن بُعد'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        foregroundColor: Colors.cyan,
                       ),
                     ),
                     TextButton.icon(
