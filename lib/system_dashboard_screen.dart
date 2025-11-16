@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:router_os_client/router_os_client.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'mikrotik_connector.dart';
 import 'snackbar_helpers.dart';
 import 'active_users_screen.dart';
@@ -19,6 +20,7 @@ import 'profile_screen.dart';
 import 'cards_statistics_optimized_screen.dart';
 import 'connection_diagnostic_screen.dart';
 import 'remote_access_guide_screen.dart';
+import 'remote_control_center.dart';
 
 class SystemDashboardScreen extends StatefulWidget {
   const SystemDashboardScreen({super.key});
@@ -95,6 +97,10 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
   DateTime? _lastUpdateTime;
   bool _isUpdating = false;
   int _updateCount = 0;
+  
+  // Connection info
+  String _connectionType = '';
+  String _currentIP = '';
 
   @override
   bool get wantKeepAlive => true;
@@ -103,6 +109,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
   void initState() {
     super.initState();
     _fetchData();
+    _updateConnectionInfo();
 
     // تحديث تلقائي كل 10 ثواني (تحديث صامت بعد التحميل الأول)
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
@@ -110,6 +117,32 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
         _fetchData(silentUpdate: true);
       }
     });
+  }
+
+  Future<void> _updateConnectionInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ip = prefs.getString('ip') ?? '';
+    
+    setState(() {
+      _currentIP = ip;
+      if (ip.isNotEmpty) {
+        _connectionType = _isLocalIP(ip) ? 'محلي' : 'عن بُعد';
+      } else {
+        _connectionType = '';
+      }
+    });
+  }
+
+  bool _isLocalIP(String ip) {
+    if (ip.isEmpty) return false;
+    final parts = ip.split('.').map(int.tryParse).toList();
+    if (parts.length != 4 || parts.any((p) => p == null)) return false;
+    
+    final nums = parts.cast<int>();
+    return (nums[0] == 10) ||
+           (nums[0] == 172 && nums[1] >= 16 && nums[1] <= 31) ||
+           (nums[0] == 192 && nums[1] == 168) ||
+           (nums[0] == 127);
   }
 
   @override
@@ -657,7 +690,47 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('لوحة المعلومات'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('لوحة المعلومات'),
+            if (_connectionType.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _connectionType == 'محلي' 
+                      ? Colors.blue.withOpacity(0.2) 
+                      : Colors.green.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _connectionType == 'محلي' ? Colors.blue : Colors.green,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _connectionType == 'محلي' ? Icons.home : Icons.public,
+                      size: 14,
+                      color: _connectionType == 'محلي' ? Colors.blue : Colors.green,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _connectionType,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: _connectionType == 'محلي' ? Colors.blue : Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
         centerTitle: true,
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
@@ -827,6 +900,9 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
                   }),
                   _buildActionButtonGrid('النسخ الاحتياطي', Icons.backup, Colors.blueGrey, () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const BackupSystemScreen()));
+                  }),
+                  _buildActionButtonGrid('التحكم عن بُعد', Icons.public, Colors.indigo, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const RemoteControlCenter()));
                   }),
                   _buildActionButtonGrid('الإعدادات', Icons.settings, theme.primaryColor, () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
