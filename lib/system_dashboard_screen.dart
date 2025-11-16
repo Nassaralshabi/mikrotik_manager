@@ -88,6 +88,11 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
   DateTime? _lastCpuAlertTime;
   DateTime? _lastMemoryAlertTime;
   DateTime? _lastTempAlertTime;
+  
+  // Update tracking
+  DateTime? _lastUpdateTime;
+  bool _isUpdating = false;
+  int _updateCount = 0;
 
   @override
   bool get wantKeepAlive => true;
@@ -97,10 +102,10 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
     super.initState();
     _fetchData();
 
-    // تحديث تلقائي كل 10 ثواني
+    // تحديث تلقائي كل 10 ثواني (تحديث صامت بعد التحميل الأول)
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (mounted) {
-        _fetchData();
+        _fetchData(silentUpdate: true);
       }
     });
   }
@@ -111,11 +116,15 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
     super.dispose();
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _fetchData({bool silentUpdate = false}) async {
     if (!mounted) return;
 
     setState(() {
-      _isLoading = true;
+      if (!silentUpdate) {
+        _isLoading = true;
+      } else {
+        _isUpdating = true;
+      }
       _errorMessage = null;
     });
 
@@ -149,15 +158,21 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _isUpdating = false;
+          _lastUpdateTime = DateTime.now();
+          _updateCount++;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _isUpdating = false;
           _errorMessage = 'فشل الاتصال بالراوتر: ${e.toString()}';
         });
-        showErrorSnackBar(context, 'فشل الاتصال بالراوتر. تحقق من إعدادات الشبكة.');
+        if (!silentUpdate) {
+          showErrorSnackBar(context, 'فشل الاتصال بالراوتر. تحقق من إعدادات الشبكة.');
+        }
       }
     }
   }
@@ -353,6 +368,19 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
     }
   }
 
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final difference = now.difference(time);
+    
+    if (difference.inSeconds < 60) {
+      return 'قبل ${difference.inSeconds} ث';
+    } else if (difference.inMinutes < 60) {
+      return 'قبل ${difference.inMinutes} د';
+    } else {
+      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    }
+  }
+
   String _formatSpeed(int bitsPerSecond) {
     final bytesPerSecond = bitsPerSecond / 8;
 
@@ -534,21 +562,44 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _isLoading ? null : _fetchData,
-            tooltip: 'تحديث',
-          ),
+          if (_isUpdating)
+            Padding(
+              padding: const EdgeInsets.all(14.0),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.primaryColor,
+                ),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _isLoading ? null : () => _fetchData(),
+              tooltip: 'تحديث',
+            ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _fetchData,
+        onRefresh: () => _fetchData(),
+        backgroundColor: theme.primaryColor,
+        color: Colors.white,
+        displacement: 60,
+        strokeWidth: 3,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Auto-update status banner
+              if (_isUpdating || (_lastUpdateTime != null && DateTime.now().difference(_lastUpdateTime!).inSeconds < 30))
+                _buildUpdateStatusBanner(theme),
+              if (_isUpdating || (_lastUpdateTime != null && DateTime.now().difference(_lastUpdateTime!).inSeconds < 30))
+                const SizedBox(height: 12),
+              
               // Alert Banner
               if (_cpuAlert || _memoryAlert || _temperatureAlert)
                 _buildAlertBanner(),
@@ -691,6 +742,10 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
   }
 
   Widget _buildMainSystemCard(ThemeData theme) {
+    final lastUpdateText = _lastUpdateTime != null 
+        ? 'آخر تحديث: ${_formatTime(_lastUpdateTime!)}'
+        : 'جاري التحديث...';
+    
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -713,16 +768,38 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
       padding: const EdgeInsets.all(32),
       child: Column(
         children: [
-          const Icon(Icons.router, size: 64, color: Colors.white),
-          const SizedBox(height: 16),
-          Text(
-            _boardName.isEmpty ? _model : _boardName,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
+          // Header with update indicator
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (_isUpdating)
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white70,
+                  ),
+                ),
+              Expanded(
+                child: Column(
+                  children: [
+                    const Icon(Icons.router, size: 64, color: Colors.white),
+                    const SizedBox(height: 16),
+                    Text(
+                      _boardName.isEmpty ? _model : _boardName,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              if (_isUpdating) const SizedBox(width: 20),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -732,34 +809,83 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
               color: Colors.white70,
             ),
           ),
+          const SizedBox(height: 8),
+          // Last update time
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isUpdating ? Icons.sync : Icons.access_time,
+                  size: 14,
+                  color: Colors.white60,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  lastUpdateText,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white60,
+                  ),
+                ),
+                if (_updateCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$_updateCount',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
           const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildMiniInfoCard(
-                'الفولت',
-                _voltage,
-                Icons.bolt,
-                Colors.yellow,
-                false,
-              ),
-              Container(width: 1, height: 40, color: Colors.white30),
-              _buildMiniInfoCard(
-                'الحرارة',
-                _temperature == 'غير متاح' ? _temperature : '$_temperature°',
-                Icons.thermostat,
-                _temperatureAlert ? Colors.red : Colors.orange,
-                _temperatureAlert,
-              ),
-              Container(width: 1, height: 40, color: Colors.white30),
-              _buildMiniInfoCard(
-                'المعالج',
-                '$_cpuLoad%',
-                Icons.memory,
-                _cpuAlert ? Colors.red : Colors.purple,
-                _cpuAlert,
-              ),
-            ],
+          // Enhanced stats with animations
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 500),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildEnhancedMiniInfoCard(
+                  'الفولت',
+                  _voltage,
+                  Icons.bolt,
+                  Colors.yellow,
+                  false,
+                ),
+                Container(width: 1, height: 50, color: Colors.white30),
+                _buildEnhancedMiniInfoCard(
+                  'الحرارة',
+                  _temperature == 'غير متاح' ? _temperature : '$_temperature°',
+                  Icons.thermostat,
+                  _temperatureAlert ? Colors.red : Colors.orange,
+                  _temperatureAlert,
+                ),
+                Container(width: 1, height: 50, color: Colors.white30),
+                _buildEnhancedMiniInfoCard(
+                  'المعالج',
+                  '$_cpuLoad%',
+                  Icons.memory,
+                  _cpuAlert ? Colors.red : Colors.purple,
+                  _cpuAlert,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -825,27 +951,163 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
     );
   }
 
+  Widget _buildEnhancedMiniInfoCard(String label, String value, IconData icon, Color color, bool isAlert) {
+    return Expanded(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                // Pulse effect for updates
+                if (_isUpdating)
+                  AnimatedContainer(
+                    duration: const Duration(seconds: 1),
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color.withOpacity(0.2),
+                    ),
+                  ),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                    border: isAlert ? Border.all(color: Colors.red, width: 2) : null,
+                  ),
+                  child: Icon(icon, size: 24, color: color),
+                ),
+                // Alert indicator
+                if (isAlert)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.warning,
+                        size: 10,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Colors.white70,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isAlert 
+                    ? Colors.red.withOpacity(0.9) 
+                    : Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: color.withOpacity(0.5),
+                  width: 1,
+                ),
+                boxShadow: isAlert ? [
+                  BoxShadow(
+                    color: Colors.red.withOpacity(0.5),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ] : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildInfoCard(String title, String value, IconData icon, Color color) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 400),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: color.withOpacity(0.3),
-          width: 1,
+          width: _isUpdating ? 2 : 1,
         ),
+        boxShadow: _isUpdating ? [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ] : null,
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 40, color: color),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(icon, size: 40, color: color),
+              if (_isUpdating)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.5),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 12),
           Text(
             title,
             style: TextStyle(
               fontSize: 14,
               color: Colors.white.withOpacity(0.7),
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),
@@ -855,6 +1117,13 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
             decoration: BoxDecoration(
               color: const Color(0xFFB39DDB),
               borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Text(
               value,
@@ -874,30 +1143,80 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
   }
 
   Widget _buildNetworkTimeCard() {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: _isUpdating 
+            ? Border.all(color: Colors.blue.withOpacity(0.5), width: 2)
+            : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(_isUpdating ? 0.2 : 0.1),
+            blurRadius: _isUpdating ? 12 : 8,
             offset: const Offset(0, 4),
+            spreadRadius: _isUpdating ? 2 : 0,
           ),
         ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.access_time, color: Colors.black54),
+          Stack(
+            children: [
+              Icon(
+                Icons.access_time, 
+                color: Colors.black54,
+                size: _isUpdating ? 22 : 20,
+              ),
+              if (_isUpdating)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.6),
+                          blurRadius: 3,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(width: 8),
-          Text(
-            'وقت الشبكة: $_date $_time',
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  'وقت الشبكة: $_date $_time',
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (_isUpdating) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'جاري تحديث الوقت...',
+                    style: TextStyle(
+                      color: Colors.green.shade700,
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -1359,5 +1678,116 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildUpdateStatusBanner(ThemeData theme) {
+    if (_isUpdating) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.blue.withOpacity(0.8),
+              Colors.cyan.withOpacity(0.6),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'جاري تحديث بيانات النظام...',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'تلقائي - كل 10 ث',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Show recent update success
+    if (_lastUpdateTime != null && 
+        DateTime.now().difference(_lastUpdateTime!).inSeconds < 30) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.green.withOpacity(0.8),
+              Colors.teal.withOpacity(0.6),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.check_circle,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'تم التحديث بنجاح - ${_formatTime(_lastUpdateTime!)}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'التحديث #$_updateCount',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return const SizedBox.shrink();
   }
 }
