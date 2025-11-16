@@ -16,6 +16,7 @@ import 'cards_statistics_screen.dart';
 import 'device_monitoring_screen.dart';
 import 'backup_system_screen.dart';
 import 'profile_screen.dart';
+import 'cards_statistics_optimized_screen.dart';
 
 class SystemDashboardScreen extends StatefulWidget {
   const SystemDashboardScreen({super.key});
@@ -668,7 +669,7 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const RogueDhcpDetectorScreen()));
                   }),
                   _buildActionButtonGrid('إحصائيات الكروت', Icons.analytics, Colors.indigo, () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const CardsStatisticsScreen()));
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const CardsStatisticsOptimizedScreen()));
                   }),
                   _buildActionButtonGrid('مراقبة الأجهزة', Icons.monitor, Colors.deepOrange, () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const DeviceMonitoringScreen()));
