@@ -17,6 +17,7 @@ import 'device_monitoring_screen.dart';
 import 'backup_system_screen.dart';
 import 'profile_screen.dart';
 import 'cards_statistics_optimized_screen.dart';
+import 'connection_diagnostic_screen.dart';
 
 class SystemDashboardScreen extends StatefulWidget {
   const SystemDashboardScreen({super.key});
@@ -168,10 +169,21 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
         setState(() {
           _isLoading = false;
           _isUpdating = false;
-          _errorMessage = 'فشل الاتصال بالراوتر: ${e.toString()}';
+          
+          // معالجة محسنة للأخطاء
+          if (e is MikrotikConnectionException) {
+            _errorMessage = e.message;
+            if (e.solution != null) {
+              _errorMessage = '$_errorMessage\n\nالحل المقترح:\n${e.solution}';
+            }
+          } else if (e is MikrotikCredentialsMissingException) {
+            _errorMessage = e.message;
+          } else {
+            _errorMessage = 'فشل الاتصال بالراوتر: ${e.toString()}';
+          }
         });
         if (!silentUpdate) {
-          showErrorSnackBar(context, 'فشل الاتصال بالراوتر. تحقق من إعدادات الشبكة.');
+          _showDetailedErrorSnackBar(context, _errorMessage ?? 'خطأ غير معروف');
         }
       }
     }
@@ -275,29 +287,18 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
 
   Future<void> _fetchActiveUsers(RouterOSClient client) async {
     try {
-      // محاولة جلب المستخدمين من Hotspot
-      try {
-        final hotspotResponse = await client.talk(['/ip/hotspot/active/print']);
-        _activeUsers = hotspotResponse.length;
-      } catch (e) {
-        // إذا فشل Hotspot، جرب User Manager
-        try {
-          final userManagerResponse = await client.talk(['/tool/user-manager/session/print']);
-          _activeUsers = userManagerResponse.length;
-        } catch (e) {
-          _activeUsers = 0;
-        }
-      }
+      // جلب الجلسات النشطة من User Manager فقط
+      final activeSessionsResponse = await client.talk(['/tool/user-manager/session/print']);
+      _activeUsers = activeSessionsResponse.length;
 
-      // جلب إجمالي المستخدمين (من User Manager)
-      try {
-        final allUsers = await client.talk(['/tool/user-manager/user/print']);
-        _totalUsers = allUsers.length;
-      } catch (e) {
-        _totalUsers = 0;
-      }
+      // جلب إجمالي المستخدمين من User Manager
+      final allUsersResponse = await client.talk(['/tool/user-manager/user/print']);
+      _totalUsers = allUsersResponse.length;
+      
+      debugPrint('User Manager: $_activeUsers active sessions, $_totalUsers total users');
+      
     } catch (e) {
-      debugPrint('Error fetching active users: $e');
+      debugPrint('Error fetching User Manager data: $e');
       _activeUsers = 0;
       _totalUsers = 0;
     }
@@ -533,23 +534,107 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
           backgroundColor: theme.scaffoldBackgroundColor,
         ),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.redAccent),
-              const SizedBox(height: 16),
-              Text(
-                _errorMessage!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _fetchData,
-                icon: const Icon(Icons.refresh),
-                label: const Text('إعادة المحاولة'),
-              ),
-            ],
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: Icon(
+                    Icons.router_outlined,
+                    size: 64,
+                    color: Colors.red.withOpacity(0.8),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.red.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red, size: 20),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'تفاصيل الخطأ',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () => _fetchData(),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('إعادة المحاولة'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (context) => const ConnectionDiagnosticScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.troubleshoot),
+                      label: const Text('تشخيص المشكلة'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        side: BorderSide(color: Colors.orange),
+                        foregroundColor: Colors.orange,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/settings');
+                      },
+                      icon: const Icon(Icons.settings),
+                      label: const Text('الإعدادات'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        foregroundColor: theme.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -1789,5 +1874,73 @@ class _SystemDashboardScreenState extends State<SystemDashboardScreen>
     }
     
     return const SizedBox.shrink();
+  }
+
+  void _showDetailedErrorSnackBar(BuildContext context, String errorMessage) {
+    final lines = errorMessage.split('\n');
+    final mainError = lines.first;
+    final hasDetails = lines.length > 1;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white, size: 24),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'خطأ في الاتصال',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(mainError, style: const TextStyle(fontSize: 14)),
+            if (hasDetails) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: lines.skip(1).map((line) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      line,
+                      style: const TextStyle(fontSize: 13, color: Colors.white90),
+                    ),
+                  )).toList(),
+                ),
+              ),
+            ],
+          ],
+        ),
+        backgroundColor: Colors.red.shade700,
+        duration: const Duration(seconds: 8),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.all(16),
+        action: SnackBarAction(
+          label: 'الإعدادات',
+          textColor: Colors.white,
+          onPressed: () {
+            Navigator.pushNamed(context, '/settings');
+          },
+        ),
+      ),
+    );
   }
 }

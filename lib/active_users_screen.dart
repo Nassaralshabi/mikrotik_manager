@@ -17,7 +17,6 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
   int _totalUsers = 0;
   int _activeCount = 0;
   Timer? _refreshTimer;
-  bool _isHotspotMode = true;
 
   @override
   void initState() {
@@ -46,29 +45,14 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
     try {
       client = await MikrotikConnector.connect();
       
-      try {
-        final hotspotResponse = await client.talk(['/ip/hotspot/active/print']);
-        _activeUsers = hotspotResponse.map((e) => Map<String, dynamic>.from(e)).toList();
-        _activeCount = _activeUsers.length;
-        _isHotspotMode = true;
-      } catch (e) {
-        try {
-          final userManagerResponse = await client.talk(['/tool/user-manager/session/print']);
-          _activeUsers = userManagerResponse.map((e) => Map<String, dynamic>.from(e)).toList();
-          _activeCount = _activeUsers.length;
-          _isHotspotMode = false;
-        } catch (e) {
-          _activeUsers = [];
-          _activeCount = 0;
-        }
-      }
+      // جلب الجلسات النشطة من User Manager فقط
+      final userManagerResponse = await client.talk(['/tool/user-manager/session/print']);
+      _activeUsers = userManagerResponse.map((e) => Map<String, dynamic>.from(e)).toList();
+      _activeCount = _activeUsers.length;
 
-      try {
-        final allUsers = await client.talk(['/tool/user-manager/user/print']);
-        _totalUsers = allUsers.length;
-      } catch (e) {
-        _totalUsers = 0;
-      }
+      // جلب إجمالي المستخدمين من User Manager
+      final allUsers = await client.talk(['/tool/user-manager/user/print']);
+      _totalUsers = allUsers.length;
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -305,7 +289,7 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  _isHotspotMode ? 'Hotspot' : 'User Manager',
+                  'User Manager',
                   style: TextStyle(
                     color: Theme.of(context).primaryColor,
                     fontSize: 12,
