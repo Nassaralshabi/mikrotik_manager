@@ -5,6 +5,7 @@ import 'mikrotik_connector.dart';
 import 'snackbar_helpers.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_palette.dart';
+import 'theme/app_gradients.dart';
 
 class DatabaseCleanupScreen extends StatefulWidget {
   const DatabaseCleanupScreen({super.key});
@@ -116,15 +117,10 @@ class _DatabaseCleanupScreenState extends State<DatabaseCleanupScreen> {
         centerTitle: true,
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE3F2FD),
-              Color(0xFFFFFFFF),
-            ],
-          ),
+        decoration: BoxDecoration(
+          gradient: Theme.of(context).brightness == Brightness.dark 
+            ? AppGradients.darkBackground 
+            : AppGradients.softBackground,
         ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -151,7 +147,7 @@ class _DatabaseCleanupScreenState extends State<DatabaseCleanupScreen> {
 
   Widget _buildWarningCard() {
     return Card(
-      color: Colors.red.shade50,
+      color: Theme.of(context).colorScheme.errorContainer,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -159,7 +155,7 @@ class _DatabaseCleanupScreenState extends State<DatabaseCleanupScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.warning, color: Colors.red.shade700, size: 32),
+                Icon(Icons.warning, color: Theme.of(context).colorScheme.error, size: 32),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -167,7 +163,7 @@ class _DatabaseCleanupScreenState extends State<DatabaseCleanupScreen> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.red.shade700,
+                      color: Theme.of(context).colorScheme.error,
                     ),
                   ),
                 ),

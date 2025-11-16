@@ -370,8 +370,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: const BoxDecoration(gradient: AppGradients.softBackground),
+      decoration: BoxDecoration(
+        gradient: isDarkMode 
+          ? AppGradients.darkBackground 
+          : AppGradients.softBackground
+      ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Stack(

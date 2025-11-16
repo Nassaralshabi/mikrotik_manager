@@ -163,6 +163,11 @@ class AppTheme with ChangeNotifier {
           borderSide: BorderSide(color: AppPalette.error),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        // ألوان النص في الحقول النصية للثيم الفاتح
+        labelStyle: TextStyle(color: AppPalette.textSecondary),
+        hintStyle: TextStyle(color: AppPalette.muted),
+        prefixIconColor: AppPalette.textSecondary,
+        suffixIconColor: AppPalette.textSecondary,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppPalette.primary,
@@ -234,6 +239,8 @@ class AppTheme with ChangeNotifier {
         error: AppPalette.error,
         background: AppPalette.darkBackground,
         surface: AppPalette.darkSurface,
+        onSurface: AppPalette.textOnDarkCard, // النص على السطوح
+        onBackground: Colors.white, // النص على الخلفية
       ),
       textTheme: TextTheme(
         displayLarge: AppTypography.displayLarge.copyWith(color: Colors.white),
@@ -283,14 +290,14 @@ class AppTheme with ChangeNotifier {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppPalette.darkSurface,
+        fillColor: AppPalette.darkCard, // أبيض للحقول النصية
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppPalette.muted),
+          borderSide: BorderSide(color: AppPalette.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppPalette.muted),
+          borderSide: BorderSide(color: AppPalette.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -301,6 +308,13 @@ class AppTheme with ChangeNotifier {
           borderSide: BorderSide(color: AppPalette.error),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        // ألوان النص في الحقول النصية
+        labelStyle: TextStyle(color: AppPalette.textOnDarkCard),
+        hintStyle: TextStyle(color: AppPalette.textSecondaryOnCard),
+        prefixIconColor: AppPalette.textOnDarkCard,
+        suffixIconColor: AppPalette.textOnDarkCard,
+        // نص المحتوى في الحقول
+        floatingLabelStyle: TextStyle(color: AppPalette.primaryLight),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppPalette.primaryLight,
