@@ -17,7 +17,12 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
   static const Duration _minRefreshGap = Duration(seconds: 20);
   static const Duration _cacheDuration = Duration(minutes: 2);
   int _page = 0;
-  static const int _pageSize = 50;
+  static const int _pageSize = 20;
+  int? _totalActiveCount;
+  bool _serverPaging = false;
+  int _backoffExp = 0;
+  static const Duration _baseInterval = Duration(seconds: 20);
+  static const Duration _maxInterval = Duration(minutes: 2);
   bool _isLoading = true;
   String _errorMessage = '';
   int _totalUsers = 0;
@@ -30,15 +35,23 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
   void initState() {
     super.initState();
     _fetchActiveUsers();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
-      if (mounted) _fetchActiveUsers();
-    });
+    _scheduleNextFetch();
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _refreshTimer = null;
     super.dispose();
+  }
+
+  void _scheduleNextFetch([Duration? delay]) {
+    _refreshTimer?.cancel();
+    final d = delay ?? _baseInterval;
+    _refreshTimer = Timer(d, () {
+      if (!mounted) return;
+      _fetchActiveUsers();
+    });
   }
 
   Future<void> _fetchActiveUsers({bool force = false}) async {
@@ -61,25 +74,55 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
       client = await MikrotikConnector.connect();
       
       try {
-        final hotspotResponse = await client.talk([
+        final args = [
           '/ip/hotspot/active/print',
           '=.proplist=user,address,uptime',
-        ]);
+          '=.limit=${_pageSize}',
+          '=.skip=${_page * _pageSize}',
+        ];
+        final hotspotResponse = await client.talk(args);
+        _serverPaging = true;
         _activeUsers = hotspotResponse.map((e) => Map<String, dynamic>.from(e)).toList();
         _activeCount = _activeUsers.length;
         _isHotspotMode = true;
       } catch (e) {
         try {
-          final userManagerResponse = await client.talk([
-            '/tool/user-manager/session/print',
-            '=.proplist=user,session-time-left,framed-ip-address,uptime',
+          _serverPaging = false;
+          final hotspotResponse = await client.talk([
+            '/ip/hotspot/active/print',
+            '=.proplist=user,address,uptime',
           ]);
-          _activeUsers = userManagerResponse.map((e) => Map<String, dynamic>.from(e)).toList();
+          _activeUsers = hotspotResponse.map((e) => Map<String, dynamic>.from(e)).toList();
           _activeCount = _activeUsers.length;
-          _isHotspotMode = false;
+          _isHotspotMode = true;
         } catch (e) {
-          _activeUsers = [];
-          _activeCount = 0;
+          try {
+            final argsUm = [
+              '/tool/user-manager/session/print',
+              '=.proplist=user,session-time-left,framed-ip-address,uptime',
+              '=.limit=${_pageSize}',
+              '=.skip=${_page * _pageSize}',
+            ];
+            final userManagerResponse = await client.talk(argsUm);
+            _serverPaging = true;
+            _activeUsers = userManagerResponse.map((e) => Map<String, dynamic>.from(e)).toList();
+            _activeCount = _activeUsers.length;
+            _isHotspotMode = false;
+          } catch (e) {
+            try {
+              _serverPaging = false;
+              final userManagerResponse = await client.talk([
+                '/tool/user-manager/session/print',
+                '=.proplist=user,session-time-left,framed-ip-address,uptime',
+              ]);
+              _activeUsers = userManagerResponse.map((e) => Map<String, dynamic>.from(e)).toList();
+              _activeCount = _activeUsers.length;
+              _isHotspotMode = false;
+            } catch (e) {
+              _activeUsers = [];
+              _activeCount = 0;
+            }
+          }
         }
       }
 
@@ -97,9 +140,11 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
       }
 
       _lastActiveFetch = DateTime.now();
+      _backoffExp = 0;
       if (mounted) {
         setState(() => _isLoading = false);
       }
+      _scheduleNextFetch();
     } on MikrotikCredentialsMissingException catch (e) {
       if (mounted) {
         setState(() {
@@ -107,6 +152,11 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
           _isLoading = false;
         });
       }
+      _backoffExp = math.min(_backoffExp + 1, 5);
+      final factor = math.pow(2, _backoffExp).toInt();
+      final secs = (_baseInterval.inSeconds * factor).clamp(0, _maxInterval.inSeconds);
+      final next = Duration(seconds: secs);
+      _scheduleNextFetch(next);
     } on MikrotikConnectionException catch (e) {
       if (mounted) {
         setState(() {
@@ -114,6 +164,11 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
           _isLoading = false;
         });
       }
+      _backoffExp = math.min(_backoffExp + 1, 5);
+      final factor = math.pow(2, _backoffExp).toInt();
+      final secs = (_baseInterval.inSeconds * factor).clamp(0, _maxInterval.inSeconds);
+      final next = Duration(seconds: secs);
+      _scheduleNextFetch(next);
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -121,6 +176,11 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
           _isLoading = false;
         });
       }
+      _backoffExp = math.min(_backoffExp + 1, 5);
+      final factor = math.pow(2, _backoffExp).toInt();
+      final secs = (_baseInterval.inSeconds * factor).clamp(0, _maxInterval.inSeconds);
+      final next = Duration(seconds: secs);
+      _scheduleNextFetch(next);
     } finally {
       client?.close();
     }
@@ -366,29 +426,59 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
 
   Widget _buildPager() {
     if (_activeUsers.isEmpty) return const SizedBox.shrink();
-    final totalPages = (_activeUsers.length + _pageSize - 1) ~/ _pageSize;
-    if (totalPages <= 1) return const SizedBox.shrink();
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        OutlinedButton(
-          onPressed: _page > 0
-              ? () => setState(() => _page = _page - 1)
-              : null,
-          child: const Text('السابق'),
-        ),
-        const SizedBox(width: 12),
-        Text('صفحة ${_page + 1} من $totalPages', style: const TextStyle(color: Colors.white70)),
-        const SizedBox(width: 12),
-        OutlinedButton(
-          onPressed: (_page + 1) < totalPages
-              ? () => setState(() => _page = _page + 1)
-              : null,
-          child: const Text('التالي'),
-        ),
-      ],
-    );
+    if (_serverPaging) {
+      final isLast = _activeUsers.length < _pageSize;
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          OutlinedButton(
+            onPressed: _page > 0
+                ? () {
+                    setState(() => _page = _page - 1);
+                    _fetchActiveUsers(force: true);
+                  }
+                : null,
+            child: const Text('السابق'),
+          ),
+          const SizedBox(width: 12),
+          Text('صفحة ${_page + 1}', style: const TextStyle(color: Colors.white70)),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: isLast
+                ? null
+                : () {
+                    setState(() => _page = _page + 1);
+                    _fetchActiveUsers(force: true);
+                  },
+            child: const Text('التالي'),
+          ),
+        ],
+      );
+    } else {
+      final totalPages = (_activeUsers.length + _pageSize - 1) ~/ _pageSize;
+      if (totalPages <= 1) return const SizedBox.shrink();
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          OutlinedButton(
+            onPressed: _page > 0
+                ? () => setState(() => _page = _page - 1)
+                : null,
+            child: const Text('السابق'),
+          ),
+          const SizedBox(width: 12),
+          Text('صفحة ${_page + 1} من $totalPages', style: const TextStyle(color: Colors.white70)),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: (_page + 1) < totalPages
+                ? () => setState(() => _page = _page + 1)
+                : null,
+            child: const Text('التالي'),
+          ),
+        ],
+      );
+    }
   }
 
   Widget _buildUserCard(Map<String, dynamic> user, int index) {

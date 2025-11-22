@@ -26,8 +26,7 @@ android {
     namespace "com.example.mikrotik_manager"
     compileSdk 36
 
-    // ✨ هذا هو التعديل المهم ✨
-    ndkVersion "27.0.12077973"
+
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -44,7 +43,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.mikrotik_manager"
-        minSdkVersion flutter.minSdkVersion
+        minSdkVersion 24
         targetSdk 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName

@@ -68,6 +68,48 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
     super.dispose();
   }
 
+  Future<List<Map<String, dynamic>>> _fetchPaginated(
+      RouterOSClient client,
+      String path,
+      String proplist, {
+      int chunk = 200,
+      int maxRecords = 2000,
+    }) async {
+    final List<Map<String, dynamic>> all = [];
+    int skip = 0;
+    bool serverPaged = true;
+    while (all.length < maxRecords) {
+      try {
+        final res = await client
+            .talk([
+              path,
+              '=.proplist=$proplist',
+              '=.limit=$chunk',
+              '=.skip=$skip',
+            ])
+            .timeout(const Duration(seconds: 10));
+        final page = res.map((e) => Map<String, dynamic>.from(e)).toList();
+        if (page.isEmpty) break;
+        all.addAll(page);
+        if (page.length < chunk) break;
+        skip += chunk;
+      } catch (_) {
+        serverPaged = false;
+        break;
+      }
+    }
+    if (!serverPaged && all.isEmpty) {
+      final res = await client
+          .talk([
+            path,
+            '=.proplist=$proplist',
+          ])
+          .timeout(const Duration(seconds: 10));
+      return res.map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+    return all;
+  }
+
   Future<void> _fetchStatistics() async {
     // التحقق من الـ cache
     if (_lastFetchTime != null && 
@@ -86,18 +128,24 @@ class _CardsStatisticsScreenState extends State<CardsStatisticsScreen> with Sing
     try {
       client = await MikrotikConnector.connect();
 
-      final usersResponse = await client.talk([
+      final usersResponse = await _fetchPaginated(
+        client,
         '/tool/user-manager/user/print',
-        '=.proplist=username,disabled,upload-used,download-used,actual-profile,uptime-limit,uptime-used',
-      ]).timeout(const Duration(seconds: 10));
+        'username,disabled,upload-used,download-used,actual-profile,uptime-limit,uptime-used',
+        chunk: 20,
+        maxRecords: 50,
+      );
 
-      final sessionsResponse = await client.talk([
+      final sessionsResponse = await _fetchPaginated(
+        client,
         '/tool/user-manager/session/print',
-        '=.proplist=user,upload,download,uptime,start-time',
-      ]).timeout(const Duration(seconds: 10));
+        'user,upload,download,uptime,start-time',
+        chunk: 20,
+        maxRecords: 50,
+      );
 
-      _usersRaw = usersResponse.map((e) => Map<String, dynamic>.from(e)).toList();
-      _sessionsRaw = sessionsResponse.map((e) => Map<String, dynamic>.from(e)).toList();
+      _usersRaw = usersResponse;
+      _sessionsRaw = sessionsResponse;
       _lastFetchTime = DateTime.now(); // حفظ وقت آخر fetch
 
       _applyFilters();
