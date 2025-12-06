@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:intl/intl.dart';
 import 'package:router_os_client/router_os_client.dart';
@@ -20,27 +21,44 @@ class RouterService {
     required String password,
     required int port,
   }) async {
-    _client?.close();
-    final client = RouterOSClient(
-      address: ip,
-      user: username,
-      password: password,
-      port: port,
-      timeout: const Duration(seconds: 8),
-    );
-    final loggedIn = await client.login().timeout(const Duration(seconds: 10));
-    if (!loggedIn) {
-      client.close();
-      throw Exception('فشل تسجيل الدخول إلى الراوتر');
+    _closeActiveClient();
+    try {
+      final client = RouterOSClient(
+        address: ip,
+        user: username,
+        password: password,
+        port: port,
+        timeout: const Duration(seconds: 8),
+      );
+      final loggedIn = await client.login().timeout(const Duration(seconds: 12));
+      if (!loggedIn) {
+        client.close();
+        throw RouterLoginException('بيانات الدخول مرفوضة. تأكد من اسم المستخدم وكلمة المرور ومنح صلاحية api.');
+      }
+      _client = client;
+      endpointLabel = '$ip:$port';
+    } on TimeoutException {
+      throw RouterLoginException('انتهت مهلة الاتصال. تأكد من فتح المنفذ $port والسماح به من الجدار الناري.');
+    } on SocketException catch (e) {
+      throw RouterLoginException('لا يمكن الوصول إلى $ip:$port (${e.message}). تحقق من الشبكة.');
+    } catch (e) {
+      throw RouterLoginException('تعذر الاتصال بالراوتر: $e');
     }
-    _client = client;
-    endpointLabel = '$ip:$port';
   }
 
   Future<void> disconnect() async {
-    _client?.close();
+    _closeActiveClient();
     _client = null;
     endpointLabel = null;
+  }
+
+  void _closeActiveClient() {
+    final current = _client;
+    if (current != null) {
+      try {
+        current.close();
+      } catch (_) {}
+    }
   }
 
   Future<List<RouterSession>> fetchActiveSessions() async {
@@ -242,4 +260,11 @@ class RouterService {
     }
     return double.tryParse(match.group(0)!) ?? 0;
   }
+}
+
+class RouterLoginException implements Exception {
+  RouterLoginException(this.message);
+  final String message;
+  @override
+  String toString() => message;
 }
