@@ -34,11 +34,19 @@ class BackendRepository {
     required String password,
     required String ip,
     required int port,
+    bool useSSL = false,
+    bool forceV6Api = true,
   }) async {
     switch (mode) {
       case DataMode.router:
-        await router.connect(ip: ip, username: username, password: password, port: port);
-        return true;
+        return await router.login(
+          host: ip,
+          username: username,
+          password: password,
+          port: port,
+          useSSL: useSSL,
+          forceV6Api: forceV6Api,
+        );
       case DataMode.backend:
         return service.login(username: username, password: password, ip: ip, port: port);
       case DataMode.mock:

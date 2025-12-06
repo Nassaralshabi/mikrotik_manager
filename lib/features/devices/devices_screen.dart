@@ -4,6 +4,7 @@ import '../../data/models/device_info.dart';
 import '../../data/repositories/backend_repository.dart';
 import '../../widgets/loading_state_view.dart';
 import '../../widgets/section_header.dart';
+import 'router_v6_config_screen.dart';
 
 class DevicesScreen extends StatelessWidget {
   const DevicesScreen({super.key, required this.repository});
@@ -79,6 +80,15 @@ class DevicesScreen extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _openRouterV6Config() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RouterV6ConfigScreen(repository: widget.repository),
       ),
     );
   }

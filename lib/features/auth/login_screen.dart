@@ -19,6 +19,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _userController = TextEditingController(text: 'admin');
   final _passController = TextEditingController();
   DataMode _dataMode = DataMode.router;
+  bool _forceV6Api = true;
+  bool _useSSL = false;
 
   bool get _needsRouterCredentials => _dataMode != DataMode.mock;
   bool get _needsBackendUrl => _dataMode == DataMode.backend;
@@ -46,6 +48,8 @@ class _LoginScreenState extends State<LoginScreen> {
       password: _passController.text.trim(),
       ip: _ipController.text.trim(),
       port: port,
+      useSSL: _useSSL,
+      forceV6Api: _forceV6Api,
     );
   }
 
@@ -81,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         DropdownButtonFormField<DataMode>(
                           value: _dataMode,
                           decoration: const InputDecoration(labelText: 'مصدر البيانات'),
@@ -107,6 +111,66 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                         ),
                         const SizedBox(height: 16),
+                        
+                        // خيارات RouterOS v6
+                        if (_dataMode == DataMode.router) ..[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue[200]!),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.info, color: Colors.blue, size: 20),
+                                    const SizedBox(width: 8),
+                                    const Expanded(
+                                      child: Text(
+                                        'RouterOS v6 مدعوم بالكامل',
+                                        style: TextStyle(
+                                          color: Colors.blue,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                CheckboxListTile(
+                                  title: const Text('فرض استخدام RouterOS v6 API'),
+                                  subtitle: const Text('موصى به لـ RouterOS v6.x'),
+                                  value: _forceV6Api,
+                                  onChanged: isLoading
+                                      ? null
+                                      : (value) => setState(() => _forceV6Api = value ?? false),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                                CheckboxListTile(
+                                  title: const Text('استخدام SSL'),
+                                  subtitle: const Text('المنفذ 8729 - أكثر أماناً'),
+                                  value: _useSSL,
+                                  onChanged: isLoading
+                                      ? null
+                                      : (value) {
+                                          setState(() {
+                                            _useSSL = value ?? false;
+                                            if (_useSSL) {
+                                              _portController.text = '8729';
+                                            } else {
+                                              _portController.text = '8728';
+                                            }
+                                          });
+                                        },
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                         if (_needsBackendUrl) ...[
                           TextFormField(
                             controller: _serverController,

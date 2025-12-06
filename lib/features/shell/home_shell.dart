@@ -7,6 +7,7 @@ import '../backup/backup_screen.dart';
 import '../cards/cards_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../devices/devices_screen.dart';
+import '../reports/reports_screen.dart';
 import '../users/users_screen.dart';
 
 class HomeShell extends StatefulWidget {
@@ -28,6 +29,7 @@ class _HomeShellState extends State<HomeShell> {
       UsersScreen(repository: repository),
       CardsScreen(repository: repository),
       DevicesScreen(repository: repository),
+      ReportsScreen(repository: repository),
       BackupScreen(repository: repository),
     ];
     return Scaffold(
@@ -56,7 +58,8 @@ class _HomeShellState extends State<HomeShell> {
           NavigationDestination(icon: Icon(Icons.people_alt_outlined), label: 'المشتركين'),
           NavigationDestination(icon: Icon(Icons.credit_card), label: 'البطاقات'),
           NavigationDestination(icon: Icon(Icons.router_outlined), label: 'الأجهزة'),
-          NavigationDestination(icon: Icon(Icons.backup_outlined), label: 'النسخ الاحتياطي'),
+          NavigationDestination(icon: Icon(Icons.analytics_outlined), label: 'التقارير'),
+          NavigationDestination(icon: Icon(Icons.backup_outlined), label: 'النسخ'),
         ],
       ),
     );
