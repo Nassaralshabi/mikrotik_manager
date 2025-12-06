@@ -1,16 +1,35 @@
-# 
+# NUM Router Manager
 
-A new  project.
+تطبيق Flutter حديث يعيد بناء سكربت NUM المكتوب بـ PHP داخل تجربة واجهات متكاملة لإدارة مشتركي MikroTik، مراقبة الجلسات، البطاقات، الأجهزة، والنسخ الاحتياطي. يعتمد التطبيق على خدمات الشبكة القديمة (الموجودة في مجلد `reference_backend`) أو على بيانات محاكاة للاستخدام دون اتصال.
 
-## Getting Started
+## المزايا الرئيسية
+- شاشة تسجيل دخول تدعم العمل في وضع الاتصال الحقيقي أو وضع المحاكاة.
+- لوحة معلومات بصرية تتضمن بطاقات ملخص، رسم بياني لمعدل النقل، وقائمة الجلسات النشطة.
+- إدارة للمشتركين والبطاقات مع بطاقات تفاعلية وقوائم قابلة للتخصيص.
+- مراقبة للأجهزة الميدانية وحالاتها إضافة إلى سجل النسخ الاحتياطية.
+- بنية بيانات واضحة (Repository + Service + MockData) تسمح بالتبديل السلس بين الخادم الحقيقي وبيانات التطوير.
 
-This project is a starting point for a Flutter application.
+## المتطلبات
+- Flutter SDK 3.3 أو أحدث.
+- Dart SDK مدمج مع Flutter.
+- خادم PHP قديم (اختياري) يمكن الوصول إليه عبر HTTP لتقديم نقاط النهاية مثل `login.php`, `load_active.php` وغيرها.
 
-A few resources to get you started if this is your first Flutter project:
+## خطوات التشغيل
+1. تثبيت الاعتمادات:
+   ```bash
+   flutter pub get
+   ```
+2. تشغيل التطبيق على أي منصة مدعومة:
+   ```bash
+   flutter run
+   ```
+3. لضبط الاتصال الحقيقي، استخدم عنوان IP والمنفذ الخاص بالراوتر MikroTik ضمن شاشة الدخول وألغ تفعيل خيار "التجربة دون اتصال".
+4. لاختبار الواجهة دون خادم، اترك خيار المحاكاة مفعلاً وسيتم تحميل البيانات من `MockDataSource`.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## هيكل المجلدات
+- `lib/` يحتوي على وحدات التطبيق (المعمارية + الواجهات).
+- `reference_backend/` يحتفظ بجميع ملفات الـ PHP الأصلية والصور حتى يسهل الرجوع إليها أو نشرها على خادم منفصل.
+- مجلدات المنصات (android/ ios/ web/ ... ) محدثة لتشغيل Flutter على جميع البيئات القياسية.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## تخصيص الخادم
+يمكن تحديث رابط الخادم الافتراضي أو ربط التطبيق بواجهة برمجية جديدة عبر تعديل `BackendService` في `lib/data/services/backend_service.dart`.
