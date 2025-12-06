@@ -14,13 +14,13 @@ class AppTheme {
       scaffoldBackgroundColor: const Color(0xFFF5F7FB),
       textTheme: GoogleFonts.tajawalTextTheme(),
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.background,
-        foregroundColor: colorScheme.onBackground,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
         elevation: 0,
         titleTextStyle: GoogleFonts.tajawal(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: colorScheme.onBackground,
+          color: colorScheme.onSurface,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
