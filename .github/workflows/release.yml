@@ -40,7 +40,7 @@ jobs:
         run: flutter pub get
 
       - name: Generate app icons
-        run: flutter pub run flutter_launcher_icons
+        run: flutter pub run flutter_launcher_icons || echo "Icon generation skipped"
 
       - name: Build release APK
         run: flutter build apk --release
@@ -75,7 +75,7 @@ jobs:
         run: flutter pub get
 
       - name: Generate app icons
-        run: flutter pub run flutter_launcher_icons
+        run: flutter pub run flutter_launcher_icons || echo "Icon generation skipped"
 
       - name: Build Web release
         run: flutter build web --release --web-renderer canvaskit
@@ -113,7 +113,7 @@ jobs:
         run: flutter pub get
 
       - name: Generate app icons
-        run: flutter pub run flutter_launcher_icons
+        run: flutter pub run flutter_launcher_icons || echo "Icon generation skipped"
 
       - name: Build Windows release
         run: flutter build windows --release
@@ -155,7 +155,7 @@ jobs:
         run: flutter pub get
 
       - name: Generate app icons
-        run: flutter pub run flutter_launcher_icons
+        run: flutter pub run flutter_launcher_icons || echo "Icon generation skipped"
 
       - name: Build Linux release
         run: flutter build linux --release

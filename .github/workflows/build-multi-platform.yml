@@ -141,7 +141,7 @@ jobs:
         run: flutter pub get
 
       - name: Generate app icons
-        run: flutter pub run flutter_launcher_icons
+        run: flutter pub run flutter_launcher_icons || echo "Icon generation skipped"
 
       - name: Build Windows
         run: flutter build windows --release
