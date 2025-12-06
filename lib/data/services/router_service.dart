@@ -86,11 +86,17 @@ class RouterService {
       final balance = _extractNumber(comment);
       return UserProfile(
         id: (row['.id'] as String?) ?? row['name']?.toString() ?? '',
-        name: (row['name'] as String?) ?? 'غير معروف',
-        plan: (row['profile'] as String?) ?? 'خطة افتراضية',
-        balance: balance,
-        activeSessions: 0,
+        username: (row['name'] as String?) ?? 'غير معروف',
+        password: (row['password'] as String?) ?? '****',
+        profileName: (row['profile'] as String?) ?? 'خطة افتراضية',
+        customerName: (row['name'] as String?) ?? 'غير معروف',
+        isActive: (row['disabled'] as String?) != 'true',
         isSuspended: (row['disabled'] as String?) == 'true',
+        downloadUsed: 0,
+        uploadUsed: 0,
+        activeSessions: 0,
+        totalSessions: 0,
+        pricePerSession: balance,
       );
     }).toList();
   }
