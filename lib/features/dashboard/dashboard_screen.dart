@@ -5,42 +5,91 @@ import '../../data/models/router_session.dart';
 import '../../data/models/service_card.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/repositories/backend_repository.dart';
+import '../../data/repositories/data_mode.dart';
 import '../../widgets/loading_state_view.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/summary_card.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key, required this.repository});
 
   final BackendRepository repository;
 
   @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAliveClientMixin {
+  late Future<_DashboardPayload> _dashboardFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _dashboardFuture = _loadDashboardData();
+  }
+
+  Future<_DashboardPayload> _loadDashboardData() async {
+    final results = await Future.wait([
+      widget.repository.activeSessions(),
+      widget.repository.profiles(),
+      widget.repository.cards(),
+    ]);
+    return _DashboardPayload(
+      sessions: results[0] as List<RouterSession>,
+      profiles: results[1] as List<UserProfile>,
+      cards: results[2] as List<ServiceCard>,
+    );
+  }
+
+  Future<void> _handleRefresh() async {
+    final newFuture = _loadDashboardData();
+    setState(() {
+      _dashboardFuture = newFuture;
+    });
+    await newFuture;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<dynamic>>(
-      future: Future.wait([
-        repository.activeSessions(),
-        repository.profiles(),
-        repository.cards(),
-      ]),
+    super.build(context);
+    return FutureBuilder<_DashboardPayload>(
+      future: _dashboardFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const LoadingStateView();
         }
         if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
+          return RefreshIndicator(
+            onRefresh: _handleRefresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(24),
+              children: [
+                Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 48),
+                const SizedBox(height: 12),
+                Text(
+                  snapshot.error.toString(),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
         }
-        final sessions = snapshot.data![0] as List<RouterSession>;
-        final profiles = snapshot.data![1] as List<UserProfile>;
-        final cards = snapshot.data![2] as List<ServiceCard>;
+        final payload = snapshot.data!;
+        final sessions = payload.sessions;
+        final profiles = payload.profiles;
+        final cards = payload.cards;
         final activeUsers = profiles.where((p) => !p.isSuspended).length;
         final suspendedUsers = profiles.length - activeUsers;
         final availableCards = cards.where((c) => c.status.contains('متاحة')).length;
         final avgDownload = sessions.isEmpty
             ? 0
             : sessions.map((s) => s.downloadMbps).reduce((a, b) => a + b) / sessions.length;
-        return Padding(
-          padding: const EdgeInsets.all(20),
+        return RefreshIndicator(
+          onRefresh: _handleRefresh,
           child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -70,7 +119,7 @@ class DashboardScreen extends StatelessWidget {
                     SummaryCard(
                       title: 'نسخ احتياطي اليوم',
                       value: '3 مهام',
-                      subtitle: repository.service.useMockData ? 'وضع تجريبي' : 'موصل بالخادم',
+                      subtitle: _connectionSubtitle,
                       icon: Icons.backup_table,
                       color: const Color(0xFF6C63FF),
                     ),
@@ -83,7 +132,7 @@ class DashboardScreen extends StatelessWidget {
                   child: Card(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: _ThroughputChart(points: repository.throughputSeries()),
+                      child: _ThroughputChart(points: widget.repository.throughputSeries()),
                     ),
                   ),
                 ),
@@ -121,11 +170,25 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
+  String get _connectionSubtitle {
+    switch (widget.repository.mode) {
+      case DataMode.router:
+        return 'متصل بالراوتر مباشرة';
+      case DataMode.backend:
+        return 'عبر خادم PHP';
+      case DataMode.mock:
+        return 'وضع محاكاة';
+    }
+  }
+
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
     return '$hoursس $minutesد';
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
 
 class _SummaryGrid extends StatelessWidget {
@@ -155,6 +218,18 @@ class _SummaryGrid extends StatelessWidget {
       },
     );
   }
+}
+
+class _DashboardPayload {
+  const _DashboardPayload({
+    required this.sessions,
+    required this.profiles,
+    required this.cards,
+  });
+
+  final List<RouterSession> sessions;
+  final List<UserProfile> profiles;
+  final List<ServiceCard> cards;
 }
 
 class _ThroughputChart extends StatelessWidget {
