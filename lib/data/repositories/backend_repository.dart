@@ -5,19 +5,28 @@ import '../models/service_card.dart';
 import '../models/user_profile.dart';
 import '../services/backend_service.dart';
 import '../services/mock_data_source.dart';
+import '../services/router_service.dart';
+import 'data_mode.dart';
 
 class BackendRepository {
-  BackendRepository({required this.service, required this.mock});
+  BackendRepository({
+    required this.service,
+    required this.mock,
+    required this.router,
+  });
 
   final BackendService service;
   final MockDataSource mock;
+  final RouterService router;
+  DataMode mode = DataMode.router;
+
+  void setMode(DataMode value) {
+    mode = value;
+    service.toggleMock(value == DataMode.mock);
+  }
 
   void setBaseUrl(String value) {
     service.updateBaseUrl(value);
-  }
-
-  void setMockMode(bool value) {
-    service.toggleMock(value);
   }
 
   Future<bool> login({
@@ -26,49 +35,84 @@ class BackendRepository {
     required String ip,
     required int port,
   }) async {
-    if (service.useMockData) {
-      await Future.delayed(const Duration(seconds: 1));
-      return username.isNotEmpty && password.isNotEmpty;
+    switch (mode) {
+      case DataMode.router:
+        await router.connect(ip: ip, username: username, password: password, port: port);
+        return true;
+      case DataMode.backend:
+        return service.login(username: username, password: password, ip: ip, port: port);
+      case DataMode.mock:
+        await Future.delayed(const Duration(milliseconds: 400));
+        return true;
     }
-    return service.login(username: username, password: password, ip: ip, port: port);
   }
 
-  Future<List<RouterSession>> activeSessions() async {
-    if (service.useMockData) {
-      return mock.getActiveSessions();
-    }
-    return service.fetchActiveSessions();
+  Future<void> disconnect() async {
+    await router.disconnect();
   }
 
-  Future<List<UserProfile>> profiles() async {
-    if (service.useMockData) {
-      return mock.getProfiles();
+  Future<List<RouterSession>> activeSessions() {
+    switch (mode) {
+      case DataMode.router:
+        return router.fetchActiveSessions();
+      case DataMode.backend:
+        return service.fetchActiveSessions();
+      case DataMode.mock:
+        return Future.value(mock.getActiveSessions());
     }
-    return service.fetchProfiles();
   }
 
-  Future<List<ServiceCard>> cards() async {
-    if (service.useMockData) {
-      return mock.getCards();
+  Future<List<UserProfile>> profiles() {
+    switch (mode) {
+      case DataMode.router:
+        return router.fetchProfiles();
+      case DataMode.backend:
+        return service.fetchProfiles();
+      case DataMode.mock:
+        return Future.value(mock.getProfiles());
     }
-    return service.fetchCards();
   }
 
-  Future<List<DeviceInfo>> devices() async {
-    if (service.useMockData) {
-      return mock.getDevices();
+  Future<List<ServiceCard>> cards() {
+    switch (mode) {
+      case DataMode.router:
+        return router.fetchCards();
+      case DataMode.backend:
+        return service.fetchCards();
+      case DataMode.mock:
+        return Future.value(mock.getCards());
     }
-    return service.fetchDevices();
   }
 
-  Future<List<BackupJob>> backups() async {
-    if (service.useMockData) {
-      return mock.getBackups();
+  Future<List<DeviceInfo>> devices() {
+    switch (mode) {
+      case DataMode.router:
+        return router.fetchDevices();
+      case DataMode.backend:
+        return service.fetchDevices();
+      case DataMode.mock:
+        return Future.value(mock.getDevices());
     }
-    return service.fetchBackups();
+  }
+
+  Future<List<BackupJob>> backups() {
+    switch (mode) {
+      case DataMode.router:
+        return router.fetchBackups();
+      case DataMode.backend:
+        return service.fetchBackups();
+      case DataMode.mock:
+        return Future.value(mock.getBackups());
+    }
   }
 
   List<double> throughputSeries() {
-    return mock.throughputSeries();
+    switch (mode) {
+      case DataMode.router:
+        final data = router.throughputSeries();
+        return data.isEmpty ? mock.throughputSeries() : data;
+      default:
+        return mock.throughputSeries();
+    }
   }
 }

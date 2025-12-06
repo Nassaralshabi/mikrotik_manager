@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../data/repositories/backend_repository.dart';
+import '../../data/repositories/data_mode.dart';
 
 enum SessionStatus { initial, loading, authenticated, error }
 
@@ -10,30 +11,42 @@ class SessionController extends ChangeNotifier {
   final BackendRepository _repository;
   SessionStatus status = SessionStatus.initial;
   String? error;
-  bool offlineMode = false;
-  String _ip = '127.0.0.1';
+  DataMode mode = DataMode.router;
+  String _ip = '192.168.88.1';
   int _port = 8728;
-  String _serverUrl = 'http://127.0.0.1/reference_backend';
+  String _backendUrl = '';
 
   String get connectionLabel {
-    return offlineMode ? 'وضع غير متصل' : _serverUrl;
+    switch (mode) {
+      case DataMode.router:
+        return 'RouterOS $_ip:$_port';
+      case DataMode.backend:
+        return _backendUrl.isEmpty ? 'خادم غير معرف' : _backendUrl;
+      case DataMode.mock:
+        return 'وضع المحاكاة';
+    }
   }
 
   Future<void> login({
+    required DataMode dataMode,
     required String backendUrl,
     required String username,
     required String password,
     required String ip,
     required int port,
-    bool offline = false,
   }) async {
     status = SessionStatus.loading;
     error = null;
     notifyListeners();
-    offlineMode = offline;
-    _repository.setMockMode(offline);
-    _serverUrl = _normalizeBaseUrl(backendUrl);
-    _repository.setBaseUrl(_serverUrl);
+
+    mode = dataMode;
+    _repository.setMode(dataMode);
+
+    if (dataMode == DataMode.backend) {
+      _backendUrl = _normalizeBaseUrl(backendUrl);
+      _repository.setBaseUrl(_backendUrl);
+    }
+
     try {
       final success = await _repository.login(
         username: username,
@@ -43,8 +56,10 @@ class SessionController extends ChangeNotifier {
       );
       if (success) {
         status = SessionStatus.authenticated;
-        _ip = ip;
-        _port = port;
+        if (mode != DataMode.mock) {
+          _ip = ip;
+          _port = port;
+        }
       } else {
         status = SessionStatus.error;
         error = 'تعذر تسجيل الدخول';
@@ -59,7 +74,7 @@ class SessionController extends ChangeNotifier {
   String _normalizeBaseUrl(String raw) {
     var url = raw.trim();
     if (url.isEmpty) {
-      return _serverUrl;
+      return _backendUrl.isEmpty ? 'http://127.0.0.1/reference_backend' : _backendUrl;
     }
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       url = 'http://$url';
@@ -70,9 +85,11 @@ class SessionController extends ChangeNotifier {
     return url;
   }
 
-  void logout() {
+  Future<void> logout() async {
+    await _repository.disconnect();
     status = SessionStatus.initial;
-    offlineMode = true;
+    mode = DataMode.router;
+    _backendUrl = '';
     notifyListeners();
   }
 }

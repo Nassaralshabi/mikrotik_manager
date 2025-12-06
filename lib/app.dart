@@ -5,6 +5,7 @@ import 'core/theme/app_theme.dart';
 import 'data/repositories/backend_repository.dart';
 import 'data/services/backend_service.dart';
 import 'data/services/mock_data_source.dart';
+import 'data/services/router_service.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/session_controller.dart';
 import 'features/shell/home_shell.dart';
@@ -18,8 +19,9 @@ class NUMApp extends StatelessWidget {
       providers: [
         Provider<BackendRepository>(
           create: (_) => BackendRepository(
-            service: BackendService(baseUrl: 'http://127.0.0.1', useMockData: true),
+            service: BackendService(baseUrl: 'http://127.0.0.1', useMockData: false),
             mock: MockDataSource(),
+            router: RouterService(),
           ),
         ),
         ChangeNotifierProvider<SessionController>(
