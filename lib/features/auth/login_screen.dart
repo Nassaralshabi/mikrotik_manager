@@ -12,14 +12,16 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _serverController = TextEditingController(text: 'http://127.0.0.1/reference_backend');
   final _ipController = TextEditingController(text: '192.168.88.1');
   final _portController = TextEditingController(text: '8728');
   final _userController = TextEditingController(text: 'admin');
   final _passController = TextEditingController();
-  bool _offlineMode = true;
+  bool _offlineMode = false;
 
   @override
   void dispose() {
+    _serverController.dispose();
     _ipController.dispose();
     _portController.dispose();
     _userController.dispose();
@@ -33,6 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     final session = context.read<SessionController>();
     await session.login(
+      backendUrl: _serverController.text.trim(),
       username: _userController.text.trim(),
       password: _passController.text.trim(),
       ip: _ipController.text.trim(),
@@ -75,9 +78,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 24),
                         TextFormField(
+                          controller: _serverController,
+                          keyboardType: TextInputType.url,
+                          decoration: const InputDecoration(
+                            labelText: 'رابط خادم NUM (HTTP)',
+                            hintText: 'https://example.com/reference_backend',
+                          ),
+                          validator: (value) => value == null || value.isEmpty ? 'أدخل رابط الخادم' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
                           controller: _ipController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'عنوان الراوتر'),
+                          decoration: const InputDecoration(labelText: 'عنوان الراوتر (RouterOS)'),
                           validator: (value) => value == null || value.isEmpty ? 'أدخل العنوان' : null,
                         ),
                         const SizedBox(height: 16),
@@ -109,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   setState(() => _offlineMode = value);
                                 },
                           title: const Text('التجربة دون اتصال بالخادم'),
-                          subtitle: const Text('يتم استخدام بيانات افتراضية للاختبار'),
+                          subtitle: const Text('عند التفعيل يتم تجاهل الخادم واستخدام بيانات محاكاة'),
                         ),
                         if (session.status == SessionStatus.error && session.error != null) ...[
                           const SizedBox(height: 8),

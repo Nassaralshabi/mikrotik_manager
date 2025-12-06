@@ -10,15 +10,17 @@ class SessionController extends ChangeNotifier {
   final BackendRepository _repository;
   SessionStatus status = SessionStatus.initial;
   String? error;
-  bool offlineMode = true;
+  bool offlineMode = false;
   String _ip = '127.0.0.1';
   int _port = 8728;
+  String _serverUrl = 'http://127.0.0.1/reference_backend';
 
   String get connectionLabel {
-    return offlineMode ? 'وضع غير متصل' : '$_ip:$_port';
+    return offlineMode ? 'وضع غير متصل' : _serverUrl;
   }
 
   Future<void> login({
+    required String backendUrl,
     required String username,
     required String password,
     required String ip,
@@ -30,7 +32,8 @@ class SessionController extends ChangeNotifier {
     notifyListeners();
     offlineMode = offline;
     _repository.setMockMode(offline);
-    _repository.setBaseUrl('http://$ip:$port');
+    _serverUrl = _normalizeBaseUrl(backendUrl);
+    _repository.setBaseUrl(_serverUrl);
     try {
       final success = await _repository.login(
         username: username,
@@ -51,6 +54,20 @@ class SessionController extends ChangeNotifier {
       error = e.toString();
     }
     notifyListeners();
+  }
+
+  String _normalizeBaseUrl(String raw) {
+    var url = raw.trim();
+    if (url.isEmpty) {
+      return _serverUrl;
+    }
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'http://$url';
+    }
+    if (url.endsWith('/')) {
+      url = url.substring(0, url.length - 1);
+    }
+    return url;
   }
 
   void logout() {
