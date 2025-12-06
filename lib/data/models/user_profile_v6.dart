@@ -1,1 +1,238 @@
-class UserProfile {\n  const UserProfile({\n    required this.id,\n    required this.username,\n    required this.password,\n    required this.profileName,\n    required this.customerName,\n    required this.isActive,\n    required this.isSuspended,\n    this.createdAt,\n    this.lastSeen,\n    required this.downloadUsed,\n    required this.uploadUsed,\n    required this.activeSessions,\n    required this.totalSessions,\n    this.callerStation,\n    this.nasPort,\n    this.profileType,\n    this.validity,\n    this.pricePerSession,\n  });\n\n  final String id;\n  final String username;\n  final String password;\n  final String profileName;\n  final String customerName;\n  final bool isActive;\n  final bool isSuspended;\n  final DateTime? createdAt;\n  final DateTime? lastSeen;\n  final double downloadUsed;\n  final double uploadUsed;\n  final int activeSessions;\n  final int totalSessions;\n  final String? callerStation;\n  final String? nasPort;\n  final String? profileType;\n  final String? validity;\n  final double? pricePerSession;\n\n  /// تحويل من JSON عادي\n  factory UserProfile.fromJson(Map<String, dynamic> json) {\n    return UserProfile(\n      id: json['id'] as String? ?? '',\n      username: json['username'] as String? ?? '',\n      password: json['password'] as String? ?? '',\n      profileName: json['profile'] as String? ?? '',\n      customerName: json['customer'] as String? ?? '',\n      isActive: json['is_active'] as bool? ?? true,\n      isSuspended: json['is_suspended'] as bool? ?? false,\n      createdAt: json['created_at'] != null\n          ? DateTime.tryParse(json['created_at'] as String)\n          : null,\n      lastSeen: json['last_seen'] != null\n          ? DateTime.tryParse(json['last_seen'] as String)\n          : null,\n      downloadUsed: (json['download_used'] as num?)?.toDouble() ?? 0.0,\n      uploadUsed: (json['upload_used'] as num?)?.toDouble() ?? 0.0,\n      activeSessions: json['active_sessions'] as int? ?? 0,\n      totalSessions: json['total_sessions'] as int? ?? 0,\n      callerStation: json['caller_station'] as String?,\n      nasPort: json['nas_port'] as String?,\n      profileType: json['profile_type'] as String?,\n      validity: json['validity'] as String?,\n      pricePerSession: (json['price_per_session'] as num?)?.toDouble(),\n    );\n  }\n\n  /// تحويل من MikroTik RouterOS v6\n  factory UserProfile.fromMikroTikV6(Map<String, dynamic> json) {\n    return UserProfile(\n      id: json['.id'] as String? ?? '',\n      username: json['username'] as String? ?? '',\n      password: json['password'] as String? ?? '',\n      profileName: json['actual-profile'] as String? ?? json['profile'] as String? ?? '',\n      customerName: json['customer'] as String? ?? '',\n      isActive: json['disabled'] != 'yes',\n      isSuspended: json['disabled'] == 'yes',\n      createdAt: _parseMikroTikDate(json['reg-time'] as String?),\n      lastSeen: _parseMikroTikDate(json['last-seen'] as String?),\n      downloadUsed: _parseMikroTikBytes(json['download-used'] as String? ?? '0'),\n      uploadUsed: _parseMikroTikBytes(json['upload-used'] as String? ?? '0'),\n      activeSessions: int.tryParse(json['active-sessions'] as String? ?? '0') ?? 0,\n      totalSessions: int.tryParse(json['sessions'] as String? ?? '0') ?? 0,\n      callerStation: json['caller-station-id'] as String?,\n      nasPort: json['nas-port'] as String?,\n      profileType: json['profile-type'] as String?,\n      validity: json['validity'] as String?,\n      pricePerSession: double.tryParse(json['price'] as String? ?? '0'),\n    );\n  }\n\n  /// تحويل تاريخ MikroTik RouterOS v6\n  static DateTime? _parseMikroTikDate(String? dateStr) {\n    if (dateStr == null || dateStr.isEmpty) return null;\n    \n    try {\n      // تنسيق MikroTik: \"jan/01/2024 12:34:56\"\n      if (dateStr.contains('/')) {\n        final months = {\n          'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',\n          'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',\n          'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'\n        };\n        \n        final parts = dateStr.split(' ');\n        if (parts.length >= 2) {\n          final datePart = parts[0];\n          final timePart = parts.length > 1 ? parts[1] : '00:00:00';\n          \n          final dateComponents = datePart.split('/');\n          if (dateComponents.length == 3) {\n            final monthStr = dateComponents[0].toLowerCase();\n            final day = dateComponents[1];\n            final year = dateComponents[2];\n            \n            if (months.containsKey(monthStr)) {\n              final month = months[monthStr]!;\n              final isoDate = '$year-$month-$day $timePart';\n              return DateTime.tryParse(isoDate);\n            }\n          }\n        }\n      }\n      \n      return DateTime.tryParse(dateStr);\n    } catch (e) {\n      return null;\n    }\n  }\n\n  /// تحويل حجم البيانات من MikroTik\n  static double _parseMikroTikBytes(String bytes) {\n    try {\n      if (bytes.isEmpty || bytes == '0') return 0.0;\n      \n      // إزالة الأحرف غير الرقمية\n      final cleanBytes = bytes.replaceAll(RegExp(r'[^0-9.]'), '');\n      return double.tryParse(cleanBytes) ?? 0.0;\n    } catch (e) {\n      return 0.0;\n    }\n  }\n\n  /// تحويل إلى JSON\n  Map<String, dynamic> toJson() {\n    return {\n      'id': id,\n      'username': username,\n      'password': password,\n      'profile': profileName,\n      'customer': customerName,\n      'is_active': isActive,\n      'is_suspended': isSuspended,\n      'created_at': createdAt?.toIso8601String(),\n      'last_seen': lastSeen?.toIso8601String(),\n      'download_used': downloadUsed,\n      'upload_used': uploadUsed,\n      'active_sessions': activeSessions,\n      'total_sessions': totalSessions,\n      'caller_station': callerStation,\n      'nas_port': nasPort,\n      'profile_type': profileType,\n      'validity': validity,\n      'price_per_session': pricePerSession,\n    };\n  }\n\n  /// تنسيق استخدام البيانات\n  String get formattedDataUsage {\n    final totalMB = (downloadUsed + uploadUsed) / 1024 / 1024;\n    if (totalMB > 1024) {\n      return '${(totalMB / 1024).toStringAsFixed(2)} GB';\n    } else {\n      return '${totalMB.toStringAsFixed(2)} MB';\n    }\n  }\n\n  /// حالة المستخدم\n  String get statusDisplay {\n    if (isSuspended) return 'موقوف';\n    if (!isActive) return 'غير نشط';\n    if (activeSessions > 0) return 'متصل الآن';\n    return 'نشط';\n  }\n\n  /// لون الحالة\n  String get statusColor {\n    if (isSuspended) return 'red';\n    if (!isActive) return 'orange';\n    if (activeSessions > 0) return 'green';\n    return 'blue';\n  }\n\n  /// نسخة محدثة من المستخدم\n  UserProfile copyWith({\n    String? id,\n    String? username,\n    String? password,\n    String? profileName,\n    String? customerName,\n    bool? isActive,\n    bool? isSuspended,\n    DateTime? createdAt,\n    DateTime? lastSeen,\n    double? downloadUsed,\n    double? uploadUsed,\n    int? activeSessions,\n    int? totalSessions,\n    String? callerStation,\n    String? nasPort,\n    String? profileType,\n    String? validity,\n    double? pricePerSession,\n  }) {\n    return UserProfile(\n      id: id ?? this.id,\n      username: username ?? this.username,\n      password: password ?? this.password,\n      profileName: profileName ?? this.profileName,\n      customerName: customerName ?? this.customerName,\n      isActive: isActive ?? this.isActive,\n      isSuspended: isSuspended ?? this.isSuspended,\n      createdAt: createdAt ?? this.createdAt,\n      lastSeen: lastSeen ?? this.lastSeen,\n      downloadUsed: downloadUsed ?? this.downloadUsed,\n      uploadUsed: uploadUsed ?? this.uploadUsed,\n      activeSessions: activeSessions ?? this.activeSessions,\n      totalSessions: totalSessions ?? this.totalSessions,\n      callerStation: callerStation ?? this.callerStation,\n      nasPort: nasPort ?? this.nasPort,\n      profileType: profileType ?? this.profileType,\n      validity: validity ?? this.validity,\n      pricePerSession: pricePerSession ?? this.pricePerSession,\n    );\n  }\n}", "old_string": "  factory UserProfile.fromJson(Map<String, dynamic> json) {\n    return UserProfile(\n      id: json['id'] as String,\n      username: json['username'] as String,\n      password: json['password'] as String,\n      profileName: json['profile'] as String,\n      customerName: json['customer'] as String,\n      isActive: json['is_active'] as bool,\n      isSuspended: json['is_suspended'] as bool,\n      createdAt: json['created_at'] != null\n          ? DateTime.tryParse(json['created_at'] as String)\n          : null,\n      lastSeen: json['last_seen'] != null\n          ? DateTime.tryParse(json['last_seen'] as String)\n          : null,\n      downloadUsed: (json['download_used'] as num).toDouble(),\n      uploadUsed: (json['upload_used'] as num).toDouble(),\n      activeSessions: json['active_sessions'] as int,\n      totalSessions: json['total_sessions'] as int,\n    );\n  }\n}"}]
+class UserProfile {
+  const UserProfile({
+    required this.id,
+    required this.username,
+    required this.password,
+    required this.profileName,
+    required this.customerName,
+    required this.isActive,
+    required this.isSuspended,
+    this.createdAt,
+    this.lastSeen,
+    required this.downloadUsed,
+    required this.uploadUsed,
+    required this.activeSessions,
+    required this.totalSessions,
+    this.callerStation,
+    this.nasPort,
+    this.profileType,
+    this.validity,
+    this.pricePerSession,
+  });
+
+  final String id;
+  final String username;
+  final String password;
+  final String profileName;
+  final String customerName;
+  final bool isActive;
+  final bool isSuspended;
+  final DateTime? createdAt;
+  final DateTime? lastSeen;
+  final double downloadUsed;
+  final double uploadUsed;
+  final int activeSessions;
+  final int totalSessions;
+  final String? callerStation;
+  final String? nasPort;
+  final String? profileType;
+  final String? validity;
+  final double? pricePerSession;
+
+  /// تحويل من JSON عادي
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    return UserProfile(
+      id: json['id'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      password: json['password'] as String? ?? '',
+      profileName: json['profile'] as String? ?? '',
+      customerName: json['customer'] as String? ?? '',
+      isActive: json['is_active'] as bool? ?? true,
+      isSuspended: json['is_suspended'] as bool? ?? false,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : null,
+      lastSeen: json['last_seen'] != null
+          ? DateTime.tryParse(json['last_seen'] as String)
+          : null,
+      downloadUsed: (json['download_used'] as num?)?.toDouble() ?? 0.0,
+      uploadUsed: (json['upload_used'] as num?)?.toDouble() ?? 0.0,
+      activeSessions: json['active_sessions'] as int? ?? 0,
+      totalSessions: json['total_sessions'] as int? ?? 0,
+      callerStation: json['caller_station'] as String?,
+      nasPort: json['nas_port'] as String?,
+      profileType: json['profile_type'] as String?,
+      validity: json['validity'] as String?,
+      pricePerSession: (json['price_per_session'] as num?)?.toDouble(),
+    );
+  }
+
+  /// تحويل من MikroTik RouterOS v6
+  factory UserProfile.fromMikroTikV6(Map<String, dynamic> json) {
+    return UserProfile(
+      id: json['.id'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      password: json['password'] as String? ?? '',
+      profileName: json['actual-profile'] as String? ?? json['profile'] as String? ?? '',
+      customerName: json['customer'] as String? ?? '',
+      isActive: json['disabled'] != 'yes',
+      isSuspended: json['disabled'] == 'yes',
+      createdAt: _parseMikroTikDate(json['reg-time'] as String?),
+      lastSeen: _parseMikroTikDate(json['last-seen'] as String?),
+      downloadUsed: _parseMikroTikBytes(json['download-used'] as String? ?? '0'),
+      uploadUsed: _parseMikroTikBytes(json['upload-used'] as String? ?? '0'),
+      activeSessions: int.tryParse(json['active-sessions'] as String? ?? '0') ?? 0,
+      totalSessions: int.tryParse(json['sessions'] as String? ?? '0') ?? 0,
+      callerStation: json['caller-station-id'] as String?,
+      nasPort: json['nas-port'] as String?,
+      profileType: json['profile-type'] as String?,
+      validity: json['validity'] as String?,
+      pricePerSession: double.tryParse(json['price'] as String? ?? '0'),
+    );
+  }
+
+  /// تحويل تاريخ MikroTik RouterOS v6
+  static DateTime? _parseMikroTikDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return null;
+    
+    try {
+      // تنسيق MikroTik: \"jan/01/2024 12:34:56\"
+      if (dateStr.contains('/')) {
+        final months = {
+          'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+          'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+          'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
+        };
+        
+        final parts = dateStr.split(' ');
+        if (parts.length >= 2) {
+          final datePart = parts[0];
+          final timePart = parts.length > 1 ? parts[1] : '00:00:00';
+          
+          final dateComponents = datePart.split('/');
+          if (dateComponents.length == 3) {
+            final monthStr = dateComponents[0].toLowerCase();
+            final day = dateComponents[1];
+            final year = dateComponents[2];
+            
+            if (months.containsKey(monthStr)) {
+              final month = months[monthStr]!;
+              final isoDate = '$year-$month-$day $timePart';
+              return DateTime.tryParse(isoDate);
+            }
+          }
+        }
+      }
+      
+      return DateTime.tryParse(dateStr);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// تحويل حجم البيانات من MikroTik
+  static double _parseMikroTikBytes(String bytes) {
+    try {
+      if (bytes.isEmpty || bytes == '0') return 0.0;
+      
+      // إزالة الأحرف غير الرقمية
+      final cleanBytes = bytes.replaceAll(RegExp(r'[^0-9.]'), '');
+      return double.tryParse(cleanBytes) ?? 0.0;
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  /// تحويل إلى JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'username': username,
+      'password': password,
+      'profile': profileName,
+      'customer': customerName,
+      'is_active': isActive,
+      'is_suspended': isSuspended,
+      'created_at': createdAt?.toIso8601String(),
+      'last_seen': lastSeen?.toIso8601String(),
+      'download_used': downloadUsed,
+      'upload_used': uploadUsed,
+      'active_sessions': activeSessions,
+      'total_sessions': totalSessions,
+      'caller_station': callerStation,
+      'nas_port': nasPort,
+      'profile_type': profileType,
+      'validity': validity,
+      'price_per_session': pricePerSession,
+    };
+  }
+
+  /// تنسيق استخدام البيانات
+  String get formattedDataUsage {
+    final totalMB = (downloadUsed + uploadUsed) / 1024 / 1024;
+    if (totalMB > 1024) {
+      return '${(totalMB / 1024).toStringAsFixed(2)} GB';
+    } else {
+      return '${totalMB.toStringAsFixed(2)} MB';
+    }
+  }
+
+  /// حالة المستخدم
+  String get statusDisplay {
+    if (isSuspended) return 'موقوف';
+    if (!isActive) return 'غير نشط';
+    if (activeSessions > 0) return 'متصل الآن';
+    return 'نشط';
+  }
+
+  /// لون الحالة
+  String get statusColor {
+    if (isSuspended) return 'red';
+    if (!isActive) return 'orange';
+    if (activeSessions > 0) return 'green';
+    return 'blue';
+  }
+
+  /// نسخة محدثة من المستخدم
+  UserProfile copyWith({
+    String? id,
+    String? username,
+    String? password,
+    String? profileName,
+    String? customerName,
+    bool? isActive,
+    bool? isSuspended,
+    DateTime? createdAt,
+    DateTime? lastSeen,
+    double? downloadUsed,
+    double? uploadUsed,
+    int? activeSessions,
+    int? totalSessions,
+    String? callerStation,
+    String? nasPort,
+    String? profileType,
+    String? validity,
+    double? pricePerSession,
+  }) {
+    return UserProfile(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      password: password ?? this.password,
+      profileName: profileName ?? this.profileName,
+      customerName: customerName ?? this.customerName,
+      isActive: isActive ?? this.isActive,
+      isSuspended: isSuspended ?? this.isSuspended,
+      createdAt: createdAt ?? this.createdAt,
+      lastSeen: lastSeen ?? this.lastSeen,
+      downloadUsed: downloadUsed ?? this.downloadUsed,
+      uploadUsed: uploadUsed ?? this.uploadUsed,
+      activeSessions: activeSessions ?? this.activeSessions,
+      totalSessions: totalSessions ?? this.totalSessions,
+      callerStation: callerStation ?? this.callerStation,
+      nasPort: nasPort ?? this.nasPort,
+      profileType: profileType ?? this.profileType,
+      validity: validity ?? this.validity,
+      pricePerSession: pricePerSession ?? this.pricePerSession,
+    );
+  }
+}

@@ -1,1 +1,190 @@
-class RouterSession {\n  const RouterSession({\n    required this.username,\n    required this.ipAddress,\n    required this.uptime,\n    required this.downloadMbps,\n    required this.uploadMbps,\n    this.sessionId,\n    this.profileName,\n    this.customerName,\n    this.callerStation,\n    this.nasPort,\n    this.downloadBytes,\n    this.uploadBytes,\n    this.isActive,\n  });\n\n  final String username;\n  final String ipAddress;\n  final Duration uptime;\n  final double downloadMbps;\n  final double uploadMbps;\n  final String? sessionId;\n  final String? profileName;\n  final String? customerName;\n  final String? callerStation;\n  final String? nasPort;\n  final int? downloadBytes;\n  final int? uploadBytes;\n  final bool? isActive;\n\n  /// تحويل من JSON عادي\n  factory RouterSession.fromJson(Map<String, dynamic> json) {\n    return RouterSession(\n      username: json['username'] as String? ?? '',\n      ipAddress: json['ip'] as String? ?? '',\n      uptime: Duration(seconds: json['uptime_seconds'] as int? ?? 0),\n      downloadMbps: (json['download_mbps'] as num?)?.toDouble() ?? 0.0,\n      uploadMbps: (json['upload_mbps'] as num?)?.toDouble() ?? 0.0,\n      sessionId: json['session_id'] as String?,\n      profileName: json['profile'] as String?,\n      customerName: json['customer'] as String?,\n      callerStation: json['caller_station'] as String?,\n      nasPort: json['nas_port'] as String?,\n      downloadBytes: json['download_bytes'] as int?,\n      uploadBytes: json['upload_bytes'] as int?,\n      isActive: json['is_active'] as bool?,\n    );\n  }\n\n  /// تحويل من MikroTik RouterOS v6\n  factory RouterSession.fromMikroTikV6(Map<String, dynamic> json) {\n    return RouterSession(\n      username: json['user'] as String? ?? json['username'] as String? ?? '',\n      ipAddress: json['caller-id'] as String? ?? json['nas-ip'] as String? ?? '',\n      uptime: _parseMikroTikDuration(json['uptime'] as String? ?? '0'),\n      downloadMbps: _parseMikroTikBytes(json['download-used'] as String? ?? '0') / 1000000,\n      uploadMbps: _parseMikroTikBytes(json['upload-used'] as String? ?? '0') / 1000000,\n      sessionId: json['.id'] as String?,\n      profileName: json['actual-profile'] as String?,\n      customerName: json['customer'] as String?,\n      callerStation: json['caller-station-id'] as String?,\n      nasPort: json['nas-port'] as String?,\n      downloadBytes: _parseMikroTikBytes(json['download-used'] as String? ?? '0').toInt(),\n      uploadBytes: _parseMikroTikBytes(json['upload-used'] as String? ?? '0').toInt(),\n      isActive: (json['active-sessions'] as String? ?? '0') != '0',\n    );\n  }\n\n  /// تحويل من MikroTik RouterOS v7+\n  factory RouterSession.fromMikroTikV7(Map<String, dynamic> json) {\n    return RouterSession(\n      username: json['username'] as String? ?? '',\n      ipAddress: json['caller-id'] as String? ?? '',\n      uptime: _parseMikroTikDuration(json['uptime'] as String? ?? '0'),\n      downloadMbps: (json['download-rate'] as num?)?.toDouble() ?? 0.0,\n      uploadMbps: (json['upload-rate'] as num?)?.toDouble() ?? 0.0,\n      sessionId: json['.id'] as String?,\n      profileName: json['profile'] as String?,\n      customerName: json['customer'] as String?,\n      downloadBytes: (json['download-bytes'] as num?)?.toInt(),\n      uploadBytes: (json['upload-bytes'] as num?)?.toInt(),\n      isActive: json['active'] as bool? ?? false,\n    );\n  }\n\n  /// تحويل مدة من تنسيق MikroTik\n  static Duration _parseMikroTikDuration(String duration) {\n    try {\n      // تنسيق MikroTik: \"1d2h3m4s\" أو ثواني مباشرة\n      if (duration.contains('d') || duration.contains('h') || duration.contains('m') || duration.contains('s')) {\n        int totalSeconds = 0;\n        \n        // أيام\n        final daysMatch = RegExp(r'(\\d+)d').firstMatch(duration);\n        if (daysMatch != null) {\n          totalSeconds += int.parse(daysMatch.group(1)!) * 86400;\n        }\n        \n        // ساعات\n        final hoursMatch = RegExp(r'(\\d+)h').firstMatch(duration);\n        if (hoursMatch != null) {\n          totalSeconds += int.parse(hoursMatch.group(1)!) * 3600;\n        }\n        \n        // دقائق\n        final minutesMatch = RegExp(r'(\\d+)m').firstMatch(duration);\n        if (minutesMatch != null) {\n          totalSeconds += int.parse(minutesMatch.group(1)!) * 60;\n        }\n        \n        // ثواني\n        final secondsMatch = RegExp(r'(\\d+)s').firstMatch(duration);\n        if (secondsMatch != null) {\n          totalSeconds += int.parse(secondsMatch.group(1)!);\n        }\n        \n        return Duration(seconds: totalSeconds);\n      } else {\n        // رقم مباشر بالثواني\n        return Duration(seconds: int.tryParse(duration) ?? 0);\n      }\n    } catch (e) {\n      return Duration.zero;\n    }\n  }\n\n  /// تحويل حجم البيانات من تنسيق MikroTik\n  static double _parseMikroTikBytes(String bytes) {\n    try {\n      if (bytes.isEmpty || bytes == '0') return 0.0;\n      \n      // إزالة الأحرف غير الرقمية من النهاية\n      final cleanBytes = bytes.replaceAll(RegExp(r'[^0-9.]'), '');\n      return double.tryParse(cleanBytes) ?? 0.0;\n    } catch (e) {\n      return 0.0;\n    }\n  }\n\n  /// تحويل إلى JSON\n  Map<String, dynamic> toJson() {\n    return {\n      'username': username,\n      'ip': ipAddress,\n      'uptime_seconds': uptime.inSeconds,\n      'download_mbps': downloadMbps,\n      'upload_mbps': uploadMbps,\n      'session_id': sessionId,\n      'profile': profileName,\n      'customer': customerName,\n      'caller_station': callerStation,\n      'nas_port': nasPort,\n      'download_bytes': downloadBytes,\n      'upload_bytes': uploadBytes,\n      'is_active': isActive,\n    };\n  }\n\n  /// تنسيق المدة للعرض\n  String get formattedUptime {\n    final hours = uptime.inHours;\n    final minutes = uptime.inMinutes.remainder(60);\n    final seconds = uptime.inSeconds.remainder(60);\n    \n    if (hours > 0) {\n      return '${hours}س ${minutes}د';\n    } else if (minutes > 0) {\n      return '${minutes}د ${seconds}ث';\n    } else {\n      return '${seconds}ث';\n    }\n  }\n\n  /// تنسيق استخدام البيانات\n  String get formattedDataUsage {\n    if (downloadBytes != null && uploadBytes != null) {\n      final totalMB = (downloadBytes! + uploadBytes!) / 1024 / 1024;\n      if (totalMB > 1024) {\n        return '${(totalMB / 1024).toStringAsFixed(2)} GB';\n      } else {\n        return '${totalMB.toStringAsFixed(2)} MB';\n      }\n    }\n    return 'غير متاح';\n  }\n\n  /// معدل النقل الإجمالي\n  double get totalThroughputMbps => downloadMbps + uploadMbps;\n}"
+class RouterSession {
+  const RouterSession({
+    required this.username,
+    required this.ipAddress,
+    required this.uptime,
+    required this.downloadMbps,
+    required this.uploadMbps,
+    this.sessionId,
+    this.profileName,
+    this.customerName,
+    this.callerStation,
+    this.nasPort,
+    this.downloadBytes,
+    this.uploadBytes,
+    this.isActive,
+  });
+
+  final String username;
+  final String ipAddress;
+  final Duration uptime;
+  final double downloadMbps;
+  final double uploadMbps;
+  final String? sessionId;
+  final String? profileName;
+  final String? customerName;
+  final String? callerStation;
+  final String? nasPort;
+  final int? downloadBytes;
+  final int? uploadBytes;
+  final bool? isActive;
+
+  /// تحويل من JSON عادي
+  factory RouterSession.fromJson(Map<String, dynamic> json) {
+    return RouterSession(
+      username: json['username'] as String? ?? '',
+      ipAddress: json['ip'] as String? ?? '',
+      uptime: Duration(seconds: json['uptime_seconds'] as int? ?? 0),
+      downloadMbps: (json['download_mbps'] as num?)?.toDouble() ?? 0.0,
+      uploadMbps: (json['upload_mbps'] as num?)?.toDouble() ?? 0.0,
+      sessionId: json['session_id'] as String?,
+      profileName: json['profile'] as String?,
+      customerName: json['customer'] as String?,
+      callerStation: json['caller_station'] as String?,
+      nasPort: json['nas_port'] as String?,
+      downloadBytes: json['download_bytes'] as int?,
+      uploadBytes: json['upload_bytes'] as int?,
+      isActive: json['is_active'] as bool?,
+    );
+  }
+
+  /// تحويل من MikroTik RouterOS v6
+  factory RouterSession.fromMikroTikV6(Map<String, dynamic> json) {
+    return RouterSession(
+      username: json['user'] as String? ?? json['username'] as String? ?? '',
+      ipAddress: json['caller-id'] as String? ?? json['nas-ip'] as String? ?? '',
+      uptime: _parseMikroTikDuration(json['uptime'] as String? ?? '0'),
+      downloadMbps: _parseMikroTikBytes(json['download-used'] as String? ?? '0') / 1000000,
+      uploadMbps: _parseMikroTikBytes(json['upload-used'] as String? ?? '0') / 1000000,
+      sessionId: json['.id'] as String?,
+      profileName: json['actual-profile'] as String?,
+      customerName: json['customer'] as String?,
+      callerStation: json['caller-station-id'] as String?,
+      nasPort: json['nas-port'] as String?,
+      downloadBytes: _parseMikroTikBytes(json['download-used'] as String? ?? '0').toInt(),
+      uploadBytes: _parseMikroTikBytes(json['upload-used'] as String? ?? '0').toInt(),
+      isActive: (json['active-sessions'] as String? ?? '0') != '0',
+    );
+  }
+
+  /// تحويل من MikroTik RouterOS v7+
+  factory RouterSession.fromMikroTikV7(Map<String, dynamic> json) {
+    return RouterSession(
+      username: json['username'] as String? ?? '',
+      ipAddress: json['caller-id'] as String? ?? '',
+      uptime: _parseMikroTikDuration(json['uptime'] as String? ?? '0'),
+      downloadMbps: (json['download-rate'] as num?)?.toDouble() ?? 0.0,
+      uploadMbps: (json['upload-rate'] as num?)?.toDouble() ?? 0.0,
+      sessionId: json['.id'] as String?,
+      profileName: json['profile'] as String?,
+      customerName: json['customer'] as String?,
+      downloadBytes: (json['download-bytes'] as num?)?.toInt(),
+      uploadBytes: (json['upload-bytes'] as num?)?.toInt(),
+      isActive: json['active'] as bool? ?? false,
+    );
+  }
+
+  /// تحويل مدة من تنسيق MikroTik
+  static Duration _parseMikroTikDuration(String duration) {
+    try {
+      // تنسيق MikroTik: \"1d2h3m4s\" أو ثواني مباشرة
+      if (duration.contains('d') || duration.contains('h') || duration.contains('m') || duration.contains('s')) {
+        int totalSeconds = 0;
+        
+        // أيام
+        final daysMatch = RegExp(r'(\\d+)d').firstMatch(duration);
+        if (daysMatch != null) {
+          totalSeconds += int.parse(daysMatch.group(1)!) * 86400;
+        }
+        
+        // ساعات
+        final hoursMatch = RegExp(r'(\\d+)h').firstMatch(duration);
+        if (hoursMatch != null) {
+          totalSeconds += int.parse(hoursMatch.group(1)!) * 3600;
+        }
+        
+        // دقائق
+        final minutesMatch = RegExp(r'(\\d+)m').firstMatch(duration);
+        if (minutesMatch != null) {
+          totalSeconds += int.parse(minutesMatch.group(1)!) * 60;
+        }
+        
+        // ثواني
+        final secondsMatch = RegExp(r'(\\d+)s').firstMatch(duration);
+        if (secondsMatch != null) {
+          totalSeconds += int.parse(secondsMatch.group(1)!);
+        }
+        
+        return Duration(seconds: totalSeconds);
+      } else {
+        // رقم مباشر بالثواني
+        return Duration(seconds: int.tryParse(duration) ?? 0);
+      }
+    } catch (e) {
+      return Duration.zero;
+    }
+  }
+
+  /// تحويل حجم البيانات من تنسيق MikroTik
+  static double _parseMikroTikBytes(String bytes) {
+    try {
+      if (bytes.isEmpty || bytes == '0') return 0.0;
+      
+      // إزالة الأحرف غير الرقمية من النهاية
+      final cleanBytes = bytes.replaceAll(RegExp(r'[^0-9.]'), '');
+      return double.tryParse(cleanBytes) ?? 0.0;
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  /// تحويل إلى JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'username': username,
+      'ip': ipAddress,
+      'uptime_seconds': uptime.inSeconds,
+      'download_mbps': downloadMbps,
+      'upload_mbps': uploadMbps,
+      'session_id': sessionId,
+      'profile': profileName,
+      'customer': customerName,
+      'caller_station': callerStation,
+      'nas_port': nasPort,
+      'download_bytes': downloadBytes,
+      'upload_bytes': uploadBytes,
+      'is_active': isActive,
+    };
+  }
+
+  /// تنسيق المدة للعرض
+  String get formattedUptime {
+    final hours = uptime.inHours;
+    final minutes = uptime.inMinutes.remainder(60);
+    final seconds = uptime.inSeconds.remainder(60);
+    
+    if (hours > 0) {
+      return '${hours}س ${minutes}د';
+    } else if (minutes > 0) {
+      return '${minutes}د ${seconds}ث';
+    } else {
+      return '${seconds}ث';
+    }
+  }
+
+  /// تنسيق استخدام البيانات
+  String get formattedDataUsage {
+    if (downloadBytes != null && uploadBytes != null) {
+      final totalMB = (downloadBytes! + uploadBytes!) / 1024 / 1024;
+      if (totalMB > 1024) {
+        return '${(totalMB / 1024).toStringAsFixed(2)} GB';
+      } else {
+        return '${totalMB.toStringAsFixed(2)} MB';
+      }
+    }
+    return 'غير متاح';
+  }
+
+  /// معدل النقل الإجمالي
+  double get totalThroughputMbps => downloadMbps + uploadMbps;
+}"

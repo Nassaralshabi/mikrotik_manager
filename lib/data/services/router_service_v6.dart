@@ -1,1 +1,392 @@
-import 'package:router_os_client/router_os_client.dart';\n\nimport '../models/device_info.dart';\nimport '../models/router_session.dart';\nimport '../models/service_card.dart';\nimport '../models/user_profile.dart';\nimport 'mikrotik_v6_api.dart';\n\nclass RouterService {\n  RouterOSClient? _client;\n  MikroTikV6Api? _v6Api;\n  bool _useV6Api = false;\n  String _lastHost = '';\n  int _lastPort = 8728;\n  String _lastUsername = '';\n  String _lastPassword = '';\n  bool _isConnected = false;\n\n  /// تسجيل الدخول مع دعم RouterOS v6 و v7\n  Future<bool> login({\n    required String host,\n    required String username,\n    required String password,\n    int port = 8728,\n    bool useSSL = false,\n    bool forceV6Api = false,\n  }) async {\n    try {\n      _lastHost = host;\n      _lastPort = port;\n      _lastUsername = username;\n      _lastPassword = password;\n      _useV6Api = forceV6Api;\n\n      if (_useV6Api || await _shouldUseV6Api(host, port)) {\n        // استخدام API المخصص لـ RouterOS v6\n        _v6Api = MikroTikV6Api();\n        await _v6Api!.connect(host: host, port: port);\n        final success = await _v6Api!.login(username, password);\n        _isConnected = success;\n        return success;\n      } else {\n        // استخدام المكتبة العادية لـ RouterOS v7+\n        _client = RouterOSClient();\n        await _client!.connect(\n          host: host,\n          port: port,\n          username: username,\n          password: password,\n          useSSL: useSSL,\n        );\n        _isConnected = true;\n        return true;\n      }\n    } catch (e) {\n      _isConnected = false;\n      throw Exception('فشل تسجيل الدخول في MikroTik: $e');\n    }\n  }\n\n  /// فحص إذا كان يجب استخدام V6 API\n  Future<bool> _shouldUseV6Api(String host, int port) async {\n    try {\n      // محاولة اتصال سريع للتحقق من الإصدار\n      final testApi = MikroTikV6Api();\n      await testApi.connect(host: host, port: port);\n      await testApi.disconnect();\n      return true; // إذا نجح الاتصال، استخدم V6 API\n    } catch (e) {\n      return false; // إذا فشل، استخدم المكتبة العادية\n    }\n  }\n\n  /// قطع الاتصال\n  Future<void> disconnect() async {\n    try {\n      if (_useV6Api && _v6Api != null) {\n        await _v6Api!.disconnect();\n      } else if (_client != null) {\n        await _client!.disconnect();\n      }\n    } catch (e) {\n      // تجاهل أخطاء القطع\n    } finally {\n      _isConnected = false;\n    }\n  }\n\n  /// الحصول على المستخدمين النشطين\n  Future<List<RouterSession>> getActiveSessions() async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      if (_useV6Api && _v6Api != null) {\n        final sessions = await _v6Api!.getActiveSessions();\n        return sessions.map((session) => RouterSession.fromMikroTikV6(session)).toList();\n      } else {\n        // استخدام المكتبة العادية\n        final result = await _client!.runCommand(['/tool/user-manager/session/print', '?active=yes']);\n        return result.map((session) => RouterSession.fromJson(session)).toList();\n      }\n    } catch (e) {\n      throw Exception('خطأ في جلب الجلسات النشطة: $e');\n    }\n  }\n\n  /// الحصول على جميع المستخدمين\n  Future<List<UserProfile>> getAllUsers() async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      if (_useV6Api && _v6Api != null) {\n        final users = await _v6Api!.getAllUsers();\n        return users.map((user) => UserProfile.fromMikroTikV6(user)).toList();\n      } else {\n        final result = await _client!.runCommand(['/tool/user-manager/user/print']);\n        return result.map((user) => UserProfile.fromJson(user)).toList();\n      }\n    } catch (e) {\n      throw Exception('خطأ في جلب المستخدمين: $e');\n    }\n  }\n\n  /// إضافة مستخدم جديد\n  Future<bool> addUser({\n    required String username,\n    required String password,\n    String? customer,\n    String? profile,\n    bool? callerIdBind,\n  }) async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      if (_useV6Api && _v6Api != null) {\n        final result = await _v6Api!.addUser(\n          username: username,\n          password: password,\n          customer: customer,\n          profile: profile,\n          callerIdBind: callerIdBind,\n        );\n        return result.isNotEmpty;\n      } else {\n        final cmd = ['/tool/user-manager/user/add'];\n        cmd.add('=username=$username');\n        cmd.add('=password=$password');\n        \n        if (customer != null) cmd.add('=customer=$customer');\n        if (profile != null) cmd.add('=profile=$profile');\n        if (callerIdBind != null) {\n          cmd.add('=caller-id-bind-on-first-use=${callerIdBind ? \"yes\" : \"no\"}');\n        }\n\n        await _client!.runCommand(cmd);\n        return true;\n      }\n    } catch (e) {\n      throw Exception('خطأ في إضافة المستخدم: $e');\n    }\n  }\n\n  /// إنشاء وتفعيل بروفايل\n  Future<bool> createAndActivateProfile({\n    required String userId,\n    required String profile,\n    required String customer,\n  }) async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      if (_useV6Api && _v6Api != null) {\n        final result = await _v6Api!.createAndActivateProfile(\n          userId: userId,\n          profile: profile,\n          customer: customer,\n        );\n        return result.isNotEmpty;\n      } else {\n        await _client!.runCommand([\n          '/tool/user-manager/user/create-and-activate-profile',\n          '=.id=$userId',\n          '=profile=$profile',\n          '=customer=$customer'\n        ]);\n        return true;\n      }\n    } catch (e) {\n      throw Exception('خطأ في تفعيل البروفايل: $e');\n    }\n  }\n\n  /// حذف مستخدم\n  Future<bool> removeUser(String userId) async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      if (_useV6Api && _v6Api != null) {\n        return await _v6Api!.removeUser(userId);\n      } else {\n        await _client!.runCommand(['/tool/user-manager/user/remove', '=.id=$userId']);\n        return true;\n      }\n    } catch (e) {\n      throw Exception('خطأ في حذف المستخدم: $e');\n    }\n  }\n\n  /// تفعيل/تعطيل مستخدم\n  Future<bool> enableDisableUser(String userId, bool enable) async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      if (_useV6Api && _v6Api != null) {\n        return await _v6Api!.enableDisableUser(userId, enable);\n      } else {\n        await _client!.runCommand([\n          '/tool/user-manager/user/set',\n          '=.id=$userId',\n          '=disabled=${enable ? \"no\" : \"yes\"}'\n        ]);\n        return true;\n      }\n    } catch (e) {\n      throw Exception('خطأ في تعديل حالة المستخدم: $e');\n    }\n  }\n\n  /// الحصول على البروفايلات\n  Future<List<Map<String, dynamic>>> getProfiles() async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      if (_useV6Api && _v6Api != null) {\n        return await _v6Api!.getProfiles();\n      } else {\n        return await _client!.runCommand(['/tool/user-manager/profile/print']);\n      }\n    } catch (e) {\n      throw Exception('خطأ في جلب البروفايلات: $e');\n    }\n  }\n\n  /// الحصول على العملاء\n  Future<List<Map<String, dynamic>>> getCustomers() async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      if (_useV6Api && _v6Api != null) {\n        return await _v6Api!.getCustomers();\n      } else {\n        return await _client!.runCommand(['/tool/user-manager/customer/print']);\n      }\n    } catch (e) {\n      throw Exception('خطأ في جلب العملاء: $e');\n    }\n  }\n\n  /// الحصول على معلومات النظام\n  Future<Map<String, dynamic>> getSystemInfo() async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      if (_useV6Api && _v6Api != null) {\n        return await _v6Api!.getSystemInfo();\n      } else {\n        final result = await _client!.runCommand(['/system/resource/print']);\n        return result.isNotEmpty ? result.first : {};\n      }\n    } catch (e) {\n      throw Exception('خطأ في جلب معلومات النظام: $e');\n    }\n  }\n\n  /// البحث عن مستخدم\n  Future<List<Map<String, dynamic>>> findUser(String field, String value) async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      if (_useV6Api && _v6Api != null) {\n        return await _v6Api!.findUser(field, value);\n      } else {\n        return await _client!.runCommand([\n          '/tool/user-manager/user/print',\n          '?$field=$value'\n        ]);\n      }\n    } catch (e) {\n      throw Exception('خطأ في البحث عن المستخدم: $e');\n    }\n  }\n\n  /// إعادة الاتصال\n  Future<bool> reconnect() async {\n    if (_lastHost.isNotEmpty) {\n      await disconnect();\n      return await login(\n        host: _lastHost,\n        username: _lastUsername,\n        password: _lastPassword,\n        port: _lastPort,\n        forceV6Api: _useV6Api,\n      );\n    }\n    return false;\n  }\n\n  /// فحص حالة الاتصال\n  Future<bool> checkConnection() async {\n    if (!_isConnected) return false;\n    \n    try {\n      await getSystemInfo();\n      return true;\n    } catch (e) {\n      _isConnected = false;\n      return false;\n    }\n  }\n\n  /// تنفيذ أمر مخصص\n  Future<List<Map<String, dynamic>>> runCustomCommand(List<String> command) async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      if (_useV6Api && _v6Api != null) {\n        return await _v6Api!.command(command);\n      } else {\n        return await _client!.runCommand(command);\n      }\n    } catch (e) {\n      throw Exception('خطأ في تنفيذ الأمر: $e');\n    }\n  }\n\n  /// الحصول على إصدار RouterOS\n  Future<String> getRouterOSVersion() async {\n    try {\n      final systemInfo = await getSystemInfo();\n      return systemInfo['version'] ?? 'غير معروف';\n    } catch (e) {\n      return 'غير متاح';\n    }\n  }\n\n  /// اختبار الاتصال\n  static Future<bool> testConnection({\n    required String host,\n    int port = 8728,\n    Duration timeout = const Duration(seconds: 5),\n  }) async {\n    try {\n      final testApi = MikroTikV6Api();\n      await testApi.connect(host: host, port: port, timeout: timeout);\n      await testApi.disconnect();\n      return true;\n    } catch (e) {\n      return false;\n    }\n  }\n\n  // Getters\n  bool get isConnected => _isConnected;\n  String get connectionInfo => _useV6Api \n    ? 'MikroTik RouterOS v6 - $_lastHost:$_lastPort'\n    : 'MikroTik RouterOS v7+ - $_lastHost:$_lastPort';\n  bool get isUsingV6Api => _useV6Api;\n  String get lastHost => _lastHost;\n  int get lastPort => _lastPort;\n}"
+import 'package:router_os_client/router_os_client.dart';
+
+import '../models/device_info.dart';
+import '../models/router_session.dart';
+import '../models/service_card.dart';
+import '../models/user_profile.dart';
+import 'mikrotik_v6_api.dart';
+
+class RouterService {
+  RouterOSClient? _client;
+  MikroTikV6Api? _v6Api;
+  bool _useV6Api = false;
+  String _lastHost = '';
+  int _lastPort = 8728;
+  String _lastUsername = '';
+  String _lastPassword = '';
+  bool _isConnected = false;
+
+  /// تسجيل الدخول مع دعم RouterOS v6 و v7
+  Future<bool> login({
+    required String host,
+    required String username,
+    required String password,
+    int port = 8728,
+    bool useSSL = false,
+    bool forceV6Api = false,
+  }) async {
+    try {
+      _lastHost = host;
+      _lastPort = port;
+      _lastUsername = username;
+      _lastPassword = password;
+      _useV6Api = forceV6Api;
+
+      if (_useV6Api || await _shouldUseV6Api(host, port)) {
+        // استخدام API المخصص لـ RouterOS v6
+        _v6Api = MikroTikV6Api();
+        await _v6Api!.connect(host: host, port: port);
+        final success = await _v6Api!.login(username, password);
+        _isConnected = success;
+        return success;
+      } else {
+        // استخدام المكتبة العادية لـ RouterOS v7+
+        _client = RouterOSClient();
+        await _client!.connect(
+          host: host,
+          port: port,
+          username: username,
+          password: password,
+          useSSL: useSSL,
+        );
+        _isConnected = true;
+        return true;
+      }
+    } catch (e) {
+      _isConnected = false;
+      throw Exception('فشل تسجيل الدخول في MikroTik: $e');
+    }
+  }
+
+  /// فحص إذا كان يجب استخدام V6 API
+  Future<bool> _shouldUseV6Api(String host, int port) async {
+    try {
+      // محاولة اتصال سريع للتحقق من الإصدار
+      final testApi = MikroTikV6Api();
+      await testApi.connect(host: host, port: port);
+      await testApi.disconnect();
+      return true; // إذا نجح الاتصال، استخدم V6 API
+    } catch (e) {
+      return false; // إذا فشل، استخدم المكتبة العادية
+    }
+  }
+
+  /// قطع الاتصال
+  Future<void> disconnect() async {
+    try {
+      if (_useV6Api && _v6Api != null) {
+        await _v6Api!.disconnect();
+      } else if (_client != null) {
+        await _client!.disconnect();
+      }
+    } catch (e) {
+      // تجاهل أخطاء القطع
+    } finally {
+      _isConnected = false;
+    }
+  }
+
+  /// الحصول على المستخدمين النشطين
+  Future<List<RouterSession>> getActiveSessions() async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      if (_useV6Api && _v6Api != null) {
+        final sessions = await _v6Api!.getActiveSessions();
+        return sessions.map((session) => RouterSession.fromMikroTikV6(session)).toList();
+      } else {
+        // استخدام المكتبة العادية
+        final result = await _client!.runCommand(['/tool/user-manager/session/print', '?active=yes']);
+        return result.map((session) => RouterSession.fromJson(session)).toList();
+      }
+    } catch (e) {
+      throw Exception('خطأ في جلب الجلسات النشطة: $e');
+    }
+  }
+
+  /// الحصول على جميع المستخدمين
+  Future<List<UserProfile>> getAllUsers() async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      if (_useV6Api && _v6Api != null) {
+        final users = await _v6Api!.getAllUsers();
+        return users.map((user) => UserProfile.fromMikroTikV6(user)).toList();
+      } else {
+        final result = await _client!.runCommand(['/tool/user-manager/user/print']);
+        return result.map((user) => UserProfile.fromJson(user)).toList();
+      }
+    } catch (e) {
+      throw Exception('خطأ في جلب المستخدمين: $e');
+    }
+  }
+
+  /// إضافة مستخدم جديد
+  Future<bool> addUser({
+    required String username,
+    required String password,
+    String? customer,
+    String? profile,
+    bool? callerIdBind,
+  }) async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      if (_useV6Api && _v6Api != null) {
+        final result = await _v6Api!.addUser(
+          username: username,
+          password: password,
+          customer: customer,
+          profile: profile,
+          callerIdBind: callerIdBind,
+        );
+        return result.isNotEmpty;
+      } else {
+        final cmd = ['/tool/user-manager/user/add'];
+        cmd.add('=username=$username');
+        cmd.add('=password=$password');
+        
+        if (customer != null) cmd.add('=customer=$customer');
+        if (profile != null) cmd.add('=profile=$profile');
+        if (callerIdBind != null) {
+          cmd.add('=caller-id-bind-on-first-use=${callerIdBind ? \"yes\" : \"no\"}');
+        }
+
+        await _client!.runCommand(cmd);
+        return true;
+      }
+    } catch (e) {
+      throw Exception('خطأ في إضافة المستخدم: $e');
+    }
+  }
+
+  /// إنشاء وتفعيل بروفايل
+  Future<bool> createAndActivateProfile({
+    required String userId,
+    required String profile,
+    required String customer,
+  }) async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      if (_useV6Api && _v6Api != null) {
+        final result = await _v6Api!.createAndActivateProfile(
+          userId: userId,
+          profile: profile,
+          customer: customer,
+        );
+        return result.isNotEmpty;
+      } else {
+        await _client!.runCommand([
+          '/tool/user-manager/user/create-and-activate-profile',
+          '=.id=$userId',
+          '=profile=$profile',
+          '=customer=$customer'
+        ]);
+        return true;
+      }
+    } catch (e) {
+      throw Exception('خطأ في تفعيل البروفايل: $e');
+    }
+  }
+
+  /// حذف مستخدم
+  Future<bool> removeUser(String userId) async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      if (_useV6Api && _v6Api != null) {
+        return await _v6Api!.removeUser(userId);
+      } else {
+        await _client!.runCommand(['/tool/user-manager/user/remove', '=.id=$userId']);
+        return true;
+      }
+    } catch (e) {
+      throw Exception('خطأ في حذف المستخدم: $e');
+    }
+  }
+
+  /// تفعيل/تعطيل مستخدم
+  Future<bool> enableDisableUser(String userId, bool enable) async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      if (_useV6Api && _v6Api != null) {
+        return await _v6Api!.enableDisableUser(userId, enable);
+      } else {
+        await _client!.runCommand([
+          '/tool/user-manager/user/set',
+          '=.id=$userId',
+          '=disabled=${enable ? \"no\" : \"yes\"}'
+        ]);
+        return true;
+      }
+    } catch (e) {
+      throw Exception('خطأ في تعديل حالة المستخدم: $e');
+    }
+  }
+
+  /// الحصول على البروفايلات
+  Future<List<Map<String, dynamic>>> getProfiles() async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      if (_useV6Api && _v6Api != null) {
+        return await _v6Api!.getProfiles();
+      } else {
+        return await _client!.runCommand(['/tool/user-manager/profile/print']);
+      }
+    } catch (e) {
+      throw Exception('خطأ في جلب البروفايلات: $e');
+    }
+  }
+
+  /// الحصول على العملاء
+  Future<List<Map<String, dynamic>>> getCustomers() async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      if (_useV6Api && _v6Api != null) {
+        return await _v6Api!.getCustomers();
+      } else {
+        return await _client!.runCommand(['/tool/user-manager/customer/print']);
+      }
+    } catch (e) {
+      throw Exception('خطأ في جلب العملاء: $e');
+    }
+  }
+
+  /// الحصول على معلومات النظام
+  Future<Map<String, dynamic>> getSystemInfo() async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      if (_useV6Api && _v6Api != null) {
+        return await _v6Api!.getSystemInfo();
+      } else {
+        final result = await _client!.runCommand(['/system/resource/print']);
+        return result.isNotEmpty ? result.first : {};
+      }
+    } catch (e) {
+      throw Exception('خطأ في جلب معلومات النظام: $e');
+    }
+  }
+
+  /// البحث عن مستخدم
+  Future<List<Map<String, dynamic>>> findUser(String field, String value) async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      if (_useV6Api && _v6Api != null) {
+        return await _v6Api!.findUser(field, value);
+      } else {
+        return await _client!.runCommand([
+          '/tool/user-manager/user/print',
+          '?$field=$value'
+        ]);
+      }
+    } catch (e) {
+      throw Exception('خطأ في البحث عن المستخدم: $e');
+    }
+  }
+
+  /// إعادة الاتصال
+  Future<bool> reconnect() async {
+    if (_lastHost.isNotEmpty) {
+      await disconnect();
+      return await login(
+        host: _lastHost,
+        username: _lastUsername,
+        password: _lastPassword,
+        port: _lastPort,
+        forceV6Api: _useV6Api,
+      );
+    }
+    return false;
+  }
+
+  /// فحص حالة الاتصال
+  Future<bool> checkConnection() async {
+    if (!_isConnected) return false;
+    
+    try {
+      await getSystemInfo();
+      return true;
+    } catch (e) {
+      _isConnected = false;
+      return false;
+    }
+  }
+
+  /// تنفيذ أمر مخصص
+  Future<List<Map<String, dynamic>>> runCustomCommand(List<String> command) async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      if (_useV6Api && _v6Api != null) {
+        return await _v6Api!.command(command);
+      } else {
+        return await _client!.runCommand(command);
+      }
+    } catch (e) {
+      throw Exception('خطأ في تنفيذ الأمر: $e');
+    }
+  }
+
+  /// الحصول على إصدار RouterOS
+  Future<String> getRouterOSVersion() async {
+    try {
+      final systemInfo = await getSystemInfo();
+      return systemInfo['version'] ?? 'غير معروف';
+    } catch (e) {
+      return 'غير متاح';
+    }
+  }
+
+  /// اختبار الاتصال
+  static Future<bool> testConnection({
+    required String host,
+    int port = 8728,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    try {
+      final testApi = MikroTikV6Api();
+      await testApi.connect(host: host, port: port, timeout: timeout);
+      await testApi.disconnect();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Getters
+  bool get isConnected => _isConnected;
+  String get connectionInfo => _useV6Api 
+    ? 'MikroTik RouterOS v6 - $_lastHost:$_lastPort'
+    : 'MikroTik RouterOS v7+ - $_lastHost:$_lastPort';
+  bool get isUsingV6Api => _useV6Api;
+  String get lastHost => _lastHost;
+  int get lastPort => _lastPort;
+}"

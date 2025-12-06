@@ -1,1 +1,499 @@
-import 'dart:io';\nimport 'dart:convert';\nimport 'dart:typed_data';\n\n/// دعم MikroTik RouterOS v6 API\nclass MikroTikV6Api {\n  late Socket _socket;\n  bool _isConnected = false;\n  String _host = '';\n  int _port = 8728;\n  Duration _timeout = const Duration(seconds: 30);\n\n  /// الاتصال بـ MikroTik Router\n  Future<bool> connect({\n    required String host,\n    int port = 8728,\n    Duration timeout = const Duration(seconds: 30),\n  }) async {\n    try {\n      _host = host;\n      _port = port;\n      _timeout = timeout;\n\n      _socket = await Socket.connect(host, port, timeout: timeout);\n      _isConnected = true;\n      return true;\n    } catch (e) {\n      _isConnected = false;\n      throw Exception('فشل الاتصال بـ MikroTik: $e');\n    }\n  }\n\n  /// تسجيل الدخول\n  Future<bool> login(String username, String password) async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      // إرسال أمر تسجيل الدخول\n      await _sendCommand(['/login']);\n      final response = await _readResponse();\n      \n      if (response.isEmpty) {\n        throw Exception('لا يوجد رد من الراوتر');\n      }\n\n      // التحقق من نوع المصادقة\n      if (response['!trap'] != null) {\n        throw Exception('خطأ في تسجيل الدخول: ${response['message'] ?? 'غير معروف'}');\n      }\n\n      // RouterOS v6 - تسجيل دخول مباشر\n      if (response['!done'] != null) {\n        await _sendCommand([\n          '/login',\n          '=name=$username',\n          '=password=$password'\n        ]);\n        \n        final loginResponse = await _readResponse();\n        \n        if (loginResponse['!done'] != null) {\n          return true;\n        } else if (loginResponse['!trap'] != null) {\n          throw Exception('فشل تسجيل الدخول: ${loginResponse['message'] ?? 'بيانات خاطئة'}');\n        }\n      }\n      \n      // RouterOS v6.43+ with challenge\n      if (response['ret'] != null) {\n        final challenge = response['ret'];\n        final hashedPassword = _md5Challenge(challenge, password);\n        \n        await _sendCommand([\n          '/login',\n          '=name=$username',\n          '=response=00$hashedPassword'\n        ]);\n        \n        final challengeResponse = await _readResponse();\n        \n        if (challengeResponse['!done'] != null) {\n          return true;\n        } else if (challengeResponse['!trap'] != null) {\n          throw Exception('فشل تسجيل الدخول: ${challengeResponse['message'] ?? 'بيانات خاطئة'}');\n        }\n      }\n\n      return false;\n    } catch (e) {\n      throw Exception('خطأ في تسجيل الدخول: $e');\n    }\n  }\n\n  /// قطع الاتصال\n  Future<void> disconnect() async {\n    if (_isConnected) {\n      try {\n        await _socket.close();\n      } catch (e) {\n        // تجاهل أخطاء القطع\n      }\n      _isConnected = false;\n    }\n  }\n\n  /// تنفيذ أمر على MikroTik\n  Future<List<Map<String, dynamic>>> command(List<String> cmd) async {\n    if (!_isConnected) {\n      throw Exception('غير متصل بالراوتر');\n    }\n\n    try {\n      await _sendCommand(cmd);\n      return await _readAllResponses();\n    } catch (e) {\n      throw Exception('خطأ في تنفيذ الأمر: $e');\n    }\n  }\n\n  /// الحصول على جميع المستخدمين النشطين\n  Future<List<Map<String, dynamic>>> getActiveUsers() async {\n    return await command(['/tool/user-manager/user/print', '?active-sessions=>0']);\n  }\n\n  /// الحصول على جميع المستخدمين\n  Future<List<Map<String, dynamic>>> getAllUsers() async {\n    return await command(['/tool/user-manager/user/print']);\n  }\n\n  /// الحصول على البروفايلات\n  Future<List<Map<String, dynamic>>> getProfiles() async {\n    return await command(['/tool/user-manager/profile/print']);\n  }\n\n  /// الحصول على العملاء\n  Future<List<Map<String, dynamic>>> getCustomers() async {\n    return await command(['/tool/user-manager/customer/print']);\n  }\n\n  /// الحصول على الجلسات النشطة\n  Future<List<Map<String, dynamic>>> getActiveSessions() async {\n    return await command(['/tool/user-manager/session/print', '?active=yes']);\n  }\n\n  /// الحصول على جميع الجلسات\n  Future<List<Map<String, dynamic>>> getAllSessions() async {\n    return await command(['/tool/user-manager/session/print']);\n  }\n\n  /// الحصول على المدفوعات\n  Future<List<Map<String, dynamic>>> getPayments() async {\n    return await command(['/tool/user-manager/payment/print']);\n  }\n\n  /// إضافة مستخدم جديد\n  Future<Map<String, dynamic>> addUser({\n    required String username,\n    required String password,\n    String? customer,\n    String? profile,\n    bool? callerIdBind,\n  }) async {\n    final cmd = ['/tool/user-manager/user/add'];\n    cmd.add('=username=$username');\n    cmd.add('=password=$password');\n    \n    if (customer != null) cmd.add('=customer=$customer');\n    if (profile != null) cmd.add('=profile=$profile');\n    if (callerIdBind != null) {\n      cmd.add('=caller-id-bind-on-first-use=${callerIdBind ? \"yes\" : \"no\"}');\n    }\n\n    final response = await command(cmd);\n    return response.isNotEmpty ? response.first : {};\n  }\n\n  /// إنشاء وتفعيل بروفايل للمستخدم\n  Future<Map<String, dynamic>> createAndActivateProfile({\n    required String userId,\n    required String profile,\n    required String customer,\n  }) async {\n    final response = await command([\n      '/tool/user-manager/user/create-and-activate-profile',\n      '=.id=$userId',\n      '=profile=$profile',\n      '=customer=$customer'\n    ]);\n    return response.isNotEmpty ? response.first : {};\n  }\n\n  /// حذف مستخدم\n  Future<bool> removeUser(String userId) async {\n    try {\n      await command(['/tool/user-manager/user/remove', '=.id=$userId']);\n      return true;\n    } catch (e) {\n      return false;\n    }\n  }\n\n  /// تعطيل/تفعيل مستخدم\n  Future<bool> enableDisableUser(String userId, bool enable) async {\n    try {\n      await command([\n        '/tool/user-manager/user/set',\n        '=.id=$userId',\n        '=disabled=${enable ? \"no\" : \"yes\"}'\n      ]);\n      return true;\n    } catch (e) {\n      return false;\n    }\n  }\n\n  /// إضافة بروفايل جديد\n  Future<Map<String, dynamic>> addProfile({\n    required String name,\n    String? validity,\n    String? price,\n    String? overrideSharedUsers,\n    String? sharedUsers,\n    String? rateLimitRx,\n    String? rateLimitTx,\n  }) async {\n    final cmd = ['/tool/user-manager/profile/add'];\n    cmd.add('=name=$name');\n    \n    if (validity != null) cmd.add('=validity=$validity');\n    if (price != null) cmd.add('=price=$price');\n    if (overrideSharedUsers != null) cmd.add('=override-shared-users=$overrideSharedUsers');\n    if (sharedUsers != null) cmd.add('=shared-users=$sharedUsers');\n    if (rateLimitRx != null) cmd.add('=rate-limit-rx=$rateLimitRx');\n    if (rateLimitTx != null) cmd.add('=rate-limit-tx=$rateLimitTx');\n\n    final response = await command(cmd);\n    return response.isNotEmpty ? response.first : {};\n  }\n\n  /// إضافة عميل جديد\n  Future<Map<String, dynamic>> addCustomer({\n    required String login,\n    required String password,\n    String? permissions,\n    String? paypalAccount,\n  }) async {\n    final cmd = ['/tool/user-manager/customer/add'];\n    cmd.add('=login=$login');\n    cmd.add('=password=$password');\n    \n    if (permissions != null) cmd.add('=permissions=$permissions');\n    if (paypalAccount != null) cmd.add('=paypal-account=$paypalAccount');\n\n    final response = await command(cmd);\n    return response.isNotEmpty ? response.first : {};\n  }\n\n  /// الحصول على معلومات النظام\n  Future<Map<String, dynamic>> getSystemInfo() async {\n    final response = await command(['/system/resource/print']);\n    return response.isNotEmpty ? response.first : {};\n  }\n\n  /// الحصول على هوية الراوتر\n  Future<Map<String, dynamic>> getIdentity() async {\n    final response = await command(['/system/identity/print']);\n    return response.isNotEmpty ? response.first : {};\n  }\n\n  /// البحث عن مستخدم\n  Future<List<Map<String, dynamic>>> findUser(String field, String value) async {\n    return await command([\n      '/tool/user-manager/user/print',\n      '?$field=$value'\n    ]);\n  }\n\n  /// البحث عن دفع\n  Future<List<Map<String, dynamic>>> findPayment(String field, String value) async {\n    return await command([\n      '/tool/user-manager/payment/print',\n      '?$field=$value'\n    ]);\n  }\n\n  /// تحديث بيانات الدفع\n  Future<bool> updatePayment(String paymentId, Map<String, String> data) async {\n    try {\n      final cmd = ['/tool/user-manager/payment/set', '=.id=$paymentId'];\n      data.forEach((key, value) {\n        cmd.add('=$key=$value');\n      });\n      await command(cmd);\n      return true;\n    } catch (e) {\n      return false;\n    }\n  }\n\n  /// إرسال أمر إلى MikroTik\n  Future<void> _sendCommand(List<String> command) async {\n    for (String word in command) {\n      await _sendWord(word);\n    }\n    await _sendWord(''); // نهاية الأمر\n  }\n\n  /// إرسال كلمة\n  Future<void> _sendWord(String word) async {\n    final bytes = utf8.encode(word);\n    final length = bytes.length;\n    \n    // إرسال طول الكلمة\n    await _sendLength(length);\n    \n    // إرسال الكلمة\n    if (length > 0) {\n      _socket.add(bytes);\n      await _socket.flush();\n    }\n  }\n\n  /// إرسال الطول\n  Future<void> _sendLength(int length) async {\n    if (length < 0x80) {\n      _socket.add([length]);\n    } else if (length < 0x4000) {\n      _socket.add([0x80 | (length >> 8), length & 0xFF]);\n    } else if (length < 0x200000) {\n      _socket.add([0xC0 | (length >> 16), (length >> 8) & 0xFF, length & 0xFF]);\n    } else if (length < 0x10000000) {\n      _socket.add([0xE0 | (length >> 24), (length >> 16) & 0xFF, (length >> 8) & 0xFF, length & 0xFF]);\n    } else {\n      _socket.add([0xF0, (length >> 24) & 0xFF, (length >> 16) & 0xFF, (length >> 8) & 0xFF, length & 0xFF]);\n    }\n    await _socket.flush();\n  }\n\n  /// قراءة رد\n  Future<Map<String, dynamic>> _readResponse() async {\n    final result = <String, dynamic>{};\n    \n    while (true) {\n      final word = await _readWord();\n      if (word.isEmpty) break;\n      \n      if (word.startsWith('!')) {\n        result[word] = true;\n      } else if (word.startsWith('=')) {\n        final parts = word.substring(1).split('=');\n        if (parts.length >= 2) {\n          result[parts[0]] = parts.sublist(1).join('=');\n        }\n      }\n    }\n    \n    return result;\n  }\n\n  /// قراءة جميع الردود\n  Future<List<Map<String, dynamic>>> _readAllResponses() async {\n    final responses = <Map<String, dynamic>>[];\n    \n    while (true) {\n      final response = await _readResponse();\n      if (response.isEmpty) break;\n      \n      if (response['!done'] != null) break;\n      if (response['!trap'] != null) {\n        throw Exception('خطأ من MikroTik: ${response['message'] ?? 'غير معروف'}');\n      }\n      \n      if (response['!re'] != null) {\n        responses.add(response);\n      }\n    }\n    \n    return responses;\n  }\n\n  /// قراءة كلمة\n  Future<String> _readWord() async {\n    final length = await _readLength();\n    if (length == 0) return '';\n    \n    final bytes = <int>[];\n    while (bytes.length < length) {\n      final data = await _socket.first;\n      bytes.addAll(data.take(length - bytes.length));\n    }\n    \n    return utf8.decode(bytes);\n  }\n\n  /// قراءة الطول\n  Future<int> _readLength() async {\n    final firstByte = await _readByte();\n    \n    if ((firstByte & 0x80) == 0) {\n      return firstByte;\n    } else if ((firstByte & 0xC0) == 0x80) {\n      return ((firstByte & 0x3F) << 8) + await _readByte();\n    } else if ((firstByte & 0xE0) == 0xC0) {\n      return ((firstByte & 0x1F) << 16) + (await _readByte() << 8) + await _readByte();\n    } else if ((firstByte & 0xF0) == 0xE0) {\n      return ((firstByte & 0x0F) << 24) + (await _readByte() << 16) + (await _readByte() << 8) + await _readByte();\n    } else {\n      await _readByte(); // تجاهل البايت الأول\n      return (await _readByte() << 24) + (await _readByte() << 16) + (await _readByte() << 8) + await _readByte();\n    }\n  }\n\n  /// قراءة بايت واحد\n  Future<int> _readByte() async {\n    final data = await _socket.first;\n    return data.first;\n  }\n\n  /// تشفير كلمة المرور مع التحدي (MD5)\n  String _md5Challenge(String challenge, String password) {\n    // يحتاج تنفيذ MD5 - يمكن استخدام مكتبة crypto\n    // هذا مثال مبسط\n    return password; // مؤقتاً\n  }\n\n  /// فحص حالة الاتصال\n  bool get isConnected => _isConnected;\n\n  /// معلومات الاتصال\n  String get connectionInfo => '$_host:$_port';\n}\n\n/// فئة مساعدة للاستعلامات المعقدة\nclass MikroTikV6QueryBuilder {\n  final List<String> _conditions = [];\n  \n  /// إضافة شرط\n  MikroTikV6QueryBuilder where(String field, String operator, dynamic value) {\n    _conditions.add('?$field$operator$value');\n    return this;\n  }\n  \n  /// شرط المساواة\n  MikroTikV6QueryBuilder equals(String field, dynamic value) {\n    return where(field, '=', value);\n  }\n  \n  /// شرط عدم المساواة\n  MikroTikV6QueryBuilder notEquals(String field, dynamic value) {\n    return where(field, '!=', value);\n  }\n  \n  /// شرط أكبر من\n  MikroTikV6QueryBuilder greaterThan(String field, dynamic value) {\n    return where(field, '>', value);\n  }\n  \n  /// شرط أصغر من\n  MikroTikV6QueryBuilder lessThan(String field, dynamic value) {\n    return where(field, '<', value);\n  }\n  \n  /// شرط يحتوي على\n  MikroTikV6QueryBuilder contains(String field, String value) {\n    return where(field, '~', value);\n  }\n  \n  /// بناء الاستعلام\n  List<String> build(String basePath) {\n    final query = [basePath];\n    query.addAll(_conditions);\n    return query;\n  }\n}\n\n/// استثناءات MikroTik\nclass MikroTikException implements Exception {\n  final String message;\n  final String? code;\n  \n  const MikroTikException(this.message, [this.code]);\n  \n  @override\n  String toString() {\n    return code != null ? 'MikroTikException ($code): $message' : 'MikroTikException: $message';\n  }\n}\n\n/// حالات الاتصال\nenum MikroTikConnectionStatus {\n  disconnected,\n  connecting,\n  connected,\n  authenticating,\n  authenticated,\n  error\n}"
+import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
+
+/// دعم MikroTik RouterOS v6 API
+class MikroTikV6Api {
+  late Socket _socket;
+  bool _isConnected = false;
+  String _host = '';
+  int _port = 8728;
+  Duration _timeout = const Duration(seconds: 30);
+
+  /// الاتصال بـ MikroTik Router
+  Future<bool> connect({
+    required String host,
+    int port = 8728,
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    try {
+      _host = host;
+      _port = port;
+      _timeout = timeout;
+
+      _socket = await Socket.connect(host, port, timeout: timeout);
+      _isConnected = true;
+      return true;
+    } catch (e) {
+      _isConnected = false;
+      throw Exception('فشل الاتصال بـ MikroTik: $e');
+    }
+  }
+
+  /// تسجيل الدخول
+  Future<bool> login(String username, String password) async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      // إرسال أمر تسجيل الدخول
+      await _sendCommand(['/login']);
+      final response = await _readResponse();
+      
+      if (response.isEmpty) {
+        throw Exception('لا يوجد رد من الراوتر');
+      }
+
+      // التحقق من نوع المصادقة
+      if (response['!trap'] != null) {
+        throw Exception('خطأ في تسجيل الدخول: ${response['message'] ?? 'غير معروف'}');
+      }
+
+      // RouterOS v6 - تسجيل دخول مباشر
+      if (response['!done'] != null) {
+        await _sendCommand([
+          '/login',
+          '=name=$username',
+          '=password=$password'
+        ]);
+        
+        final loginResponse = await _readResponse();
+        
+        if (loginResponse['!done'] != null) {
+          return true;
+        } else if (loginResponse['!trap'] != null) {
+          throw Exception('فشل تسجيل الدخول: ${loginResponse['message'] ?? 'بيانات خاطئة'}');
+        }
+      }
+      
+      // RouterOS v6.43+ with challenge
+      if (response['ret'] != null) {
+        final challenge = response['ret'];
+        final hashedPassword = _md5Challenge(challenge, password);
+        
+        await _sendCommand([
+          '/login',
+          '=name=$username',
+          '=response=00$hashedPassword'
+        ]);
+        
+        final challengeResponse = await _readResponse();
+        
+        if (challengeResponse['!done'] != null) {
+          return true;
+        } else if (challengeResponse['!trap'] != null) {
+          throw Exception('فشل تسجيل الدخول: ${challengeResponse['message'] ?? 'بيانات خاطئة'}');
+        }
+      }
+
+      return false;
+    } catch (e) {
+      throw Exception('خطأ في تسجيل الدخول: $e');
+    }
+  }
+
+  /// قطع الاتصال
+  Future<void> disconnect() async {
+    if (_isConnected) {
+      try {
+        await _socket.close();
+      } catch (e) {
+        // تجاهل أخطاء القطع
+      }
+      _isConnected = false;
+    }
+  }
+
+  /// تنفيذ أمر على MikroTik
+  Future<List<Map<String, dynamic>>> command(List<String> cmd) async {
+    if (!_isConnected) {
+      throw Exception('غير متصل بالراوتر');
+    }
+
+    try {
+      await _sendCommand(cmd);
+      return await _readAllResponses();
+    } catch (e) {
+      throw Exception('خطأ في تنفيذ الأمر: $e');
+    }
+  }
+
+  /// الحصول على جميع المستخدمين النشطين
+  Future<List<Map<String, dynamic>>> getActiveUsers() async {
+    return await command(['/tool/user-manager/user/print', '?active-sessions=>0']);
+  }
+
+  /// الحصول على جميع المستخدمين
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    return await command(['/tool/user-manager/user/print']);
+  }
+
+  /// الحصول على البروفايلات
+  Future<List<Map<String, dynamic>>> getProfiles() async {
+    return await command(['/tool/user-manager/profile/print']);
+  }
+
+  /// الحصول على العملاء
+  Future<List<Map<String, dynamic>>> getCustomers() async {
+    return await command(['/tool/user-manager/customer/print']);
+  }
+
+  /// الحصول على الجلسات النشطة
+  Future<List<Map<String, dynamic>>> getActiveSessions() async {
+    return await command(['/tool/user-manager/session/print', '?active=yes']);
+  }
+
+  /// الحصول على جميع الجلسات
+  Future<List<Map<String, dynamic>>> getAllSessions() async {
+    return await command(['/tool/user-manager/session/print']);
+  }
+
+  /// الحصول على المدفوعات
+  Future<List<Map<String, dynamic>>> getPayments() async {
+    return await command(['/tool/user-manager/payment/print']);
+  }
+
+  /// إضافة مستخدم جديد
+  Future<Map<String, dynamic>> addUser({
+    required String username,
+    required String password,
+    String? customer,
+    String? profile,
+    bool? callerIdBind,
+  }) async {
+    final cmd = ['/tool/user-manager/user/add'];
+    cmd.add('=username=$username');
+    cmd.add('=password=$password');
+    
+    if (customer != null) cmd.add('=customer=$customer');
+    if (profile != null) cmd.add('=profile=$profile');
+    if (callerIdBind != null) {
+      cmd.add('=caller-id-bind-on-first-use=${callerIdBind ? \"yes\" : \"no\"}');
+    }
+
+    final response = await command(cmd);
+    return response.isNotEmpty ? response.first : {};
+  }
+
+  /// إنشاء وتفعيل بروفايل للمستخدم
+  Future<Map<String, dynamic>> createAndActivateProfile({
+    required String userId,
+    required String profile,
+    required String customer,
+  }) async {
+    final response = await command([
+      '/tool/user-manager/user/create-and-activate-profile',
+      '=.id=$userId',
+      '=profile=$profile',
+      '=customer=$customer'
+    ]);
+    return response.isNotEmpty ? response.first : {};
+  }
+
+  /// حذف مستخدم
+  Future<bool> removeUser(String userId) async {
+    try {
+      await command(['/tool/user-manager/user/remove', '=.id=$userId']);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// تعطيل/تفعيل مستخدم
+  Future<bool> enableDisableUser(String userId, bool enable) async {
+    try {
+      await command([
+        '/tool/user-manager/user/set',
+        '=.id=$userId',
+        '=disabled=${enable ? \"no\" : \"yes\"}'
+      ]);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// إضافة بروفايل جديد
+  Future<Map<String, dynamic>> addProfile({
+    required String name,
+    String? validity,
+    String? price,
+    String? overrideSharedUsers,
+    String? sharedUsers,
+    String? rateLimitRx,
+    String? rateLimitTx,
+  }) async {
+    final cmd = ['/tool/user-manager/profile/add'];
+    cmd.add('=name=$name');
+    
+    if (validity != null) cmd.add('=validity=$validity');
+    if (price != null) cmd.add('=price=$price');
+    if (overrideSharedUsers != null) cmd.add('=override-shared-users=$overrideSharedUsers');
+    if (sharedUsers != null) cmd.add('=shared-users=$sharedUsers');
+    if (rateLimitRx != null) cmd.add('=rate-limit-rx=$rateLimitRx');
+    if (rateLimitTx != null) cmd.add('=rate-limit-tx=$rateLimitTx');
+
+    final response = await command(cmd);
+    return response.isNotEmpty ? response.first : {};
+  }
+
+  /// إضافة عميل جديد
+  Future<Map<String, dynamic>> addCustomer({
+    required String login,
+    required String password,
+    String? permissions,
+    String? paypalAccount,
+  }) async {
+    final cmd = ['/tool/user-manager/customer/add'];
+    cmd.add('=login=$login');
+    cmd.add('=password=$password');
+    
+    if (permissions != null) cmd.add('=permissions=$permissions');
+    if (paypalAccount != null) cmd.add('=paypal-account=$paypalAccount');
+
+    final response = await command(cmd);
+    return response.isNotEmpty ? response.first : {};
+  }
+
+  /// الحصول على معلومات النظام
+  Future<Map<String, dynamic>> getSystemInfo() async {
+    final response = await command(['/system/resource/print']);
+    return response.isNotEmpty ? response.first : {};
+  }
+
+  /// الحصول على هوية الراوتر
+  Future<Map<String, dynamic>> getIdentity() async {
+    final response = await command(['/system/identity/print']);
+    return response.isNotEmpty ? response.first : {};
+  }
+
+  /// البحث عن مستخدم
+  Future<List<Map<String, dynamic>>> findUser(String field, String value) async {
+    return await command([
+      '/tool/user-manager/user/print',
+      '?$field=$value'
+    ]);
+  }
+
+  /// البحث عن دفع
+  Future<List<Map<String, dynamic>>> findPayment(String field, String value) async {
+    return await command([
+      '/tool/user-manager/payment/print',
+      '?$field=$value'
+    ]);
+  }
+
+  /// تحديث بيانات الدفع
+  Future<bool> updatePayment(String paymentId, Map<String, String> data) async {
+    try {
+      final cmd = ['/tool/user-manager/payment/set', '=.id=$paymentId'];
+      data.forEach((key, value) {
+        cmd.add('=$key=$value');
+      });
+      await command(cmd);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// إرسال أمر إلى MikroTik
+  Future<void> _sendCommand(List<String> command) async {
+    for (String word in command) {
+      await _sendWord(word);
+    }
+    await _sendWord(''); // نهاية الأمر
+  }
+
+  /// إرسال كلمة
+  Future<void> _sendWord(String word) async {
+    final bytes = utf8.encode(word);
+    final length = bytes.length;
+    
+    // إرسال طول الكلمة
+    await _sendLength(length);
+    
+    // إرسال الكلمة
+    if (length > 0) {
+      _socket.add(bytes);
+      await _socket.flush();
+    }
+  }
+
+  /// إرسال الطول
+  Future<void> _sendLength(int length) async {
+    if (length < 0x80) {
+      _socket.add([length]);
+    } else if (length < 0x4000) {
+      _socket.add([0x80 | (length >> 8), length & 0xFF]);
+    } else if (length < 0x200000) {
+      _socket.add([0xC0 | (length >> 16), (length >> 8) & 0xFF, length & 0xFF]);
+    } else if (length < 0x10000000) {
+      _socket.add([0xE0 | (length >> 24), (length >> 16) & 0xFF, (length >> 8) & 0xFF, length & 0xFF]);
+    } else {
+      _socket.add([0xF0, (length >> 24) & 0xFF, (length >> 16) & 0xFF, (length >> 8) & 0xFF, length & 0xFF]);
+    }
+    await _socket.flush();
+  }
+
+  /// قراءة رد
+  Future<Map<String, dynamic>> _readResponse() async {
+    final result = <String, dynamic>{};
+    
+    while (true) {
+      final word = await _readWord();
+      if (word.isEmpty) break;
+      
+      if (word.startsWith('!')) {
+        result[word] = true;
+      } else if (word.startsWith('=')) {
+        final parts = word.substring(1).split('=');
+        if (parts.length >= 2) {
+          result[parts[0]] = parts.sublist(1).join('=');
+        }
+      }
+    }
+    
+    return result;
+  }
+
+  /// قراءة جميع الردود
+  Future<List<Map<String, dynamic>>> _readAllResponses() async {
+    final responses = <Map<String, dynamic>>[];
+    
+    while (true) {
+      final response = await _readResponse();
+      if (response.isEmpty) break;
+      
+      if (response['!done'] != null) break;
+      if (response['!trap'] != null) {
+        throw Exception('خطأ من MikroTik: ${response['message'] ?? 'غير معروف'}');
+      }
+      
+      if (response['!re'] != null) {
+        responses.add(response);
+      }
+    }
+    
+    return responses;
+  }
+
+  /// قراءة كلمة
+  Future<String> _readWord() async {
+    final length = await _readLength();
+    if (length == 0) return '';
+    
+    final bytes = <int>[];
+    while (bytes.length < length) {
+      final data = await _socket.first;
+      bytes.addAll(data.take(length - bytes.length));
+    }
+    
+    return utf8.decode(bytes);
+  }
+
+  /// قراءة الطول
+  Future<int> _readLength() async {
+    final firstByte = await _readByte();
+    
+    if ((firstByte & 0x80) == 0) {
+      return firstByte;
+    } else if ((firstByte & 0xC0) == 0x80) {
+      return ((firstByte & 0x3F) << 8) + await _readByte();
+    } else if ((firstByte & 0xE0) == 0xC0) {
+      return ((firstByte & 0x1F) << 16) + (await _readByte() << 8) + await _readByte();
+    } else if ((firstByte & 0xF0) == 0xE0) {
+      return ((firstByte & 0x0F) << 24) + (await _readByte() << 16) + (await _readByte() << 8) + await _readByte();
+    } else {
+      await _readByte(); // تجاهل البايت الأول
+      return (await _readByte() << 24) + (await _readByte() << 16) + (await _readByte() << 8) + await _readByte();
+    }
+  }
+
+  /// قراءة بايت واحد
+  Future<int> _readByte() async {
+    final data = await _socket.first;
+    return data.first;
+  }
+
+  /// تشفير كلمة المرور مع التحدي (MD5)
+  String _md5Challenge(String challenge, String password) {
+    // يحتاج تنفيذ MD5 - يمكن استخدام مكتبة crypto
+    // هذا مثال مبسط
+    return password; // مؤقتاً
+  }
+
+  /// فحص حالة الاتصال
+  bool get isConnected => _isConnected;
+
+  /// معلومات الاتصال
+  String get connectionInfo => '$_host:$_port';
+}
+
+/// فئة مساعدة للاستعلامات المعقدة
+class MikroTikV6QueryBuilder {
+  final List<String> _conditions = [];
+  
+  /// إضافة شرط
+  MikroTikV6QueryBuilder where(String field, String operator, dynamic value) {
+    _conditions.add('?$field$operator$value');
+    return this;
+  }
+  
+  /// شرط المساواة
+  MikroTikV6QueryBuilder equals(String field, dynamic value) {
+    return where(field, '=', value);
+  }
+  
+  /// شرط عدم المساواة
+  MikroTikV6QueryBuilder notEquals(String field, dynamic value) {
+    return where(field, '!=', value);
+  }
+  
+  /// شرط أكبر من
+  MikroTikV6QueryBuilder greaterThan(String field, dynamic value) {
+    return where(field, '>', value);
+  }
+  
+  /// شرط أصغر من
+  MikroTikV6QueryBuilder lessThan(String field, dynamic value) {
+    return where(field, '<', value);
+  }
+  
+  /// شرط يحتوي على
+  MikroTikV6QueryBuilder contains(String field, String value) {
+    return where(field, '~', value);
+  }
+  
+  /// بناء الاستعلام
+  List<String> build(String basePath) {
+    final query = [basePath];
+    query.addAll(_conditions);
+    return query;
+  }
+}
+
+/// استثناءات MikroTik
+class MikroTikException implements Exception {
+  final String message;
+  final String? code;
+  
+  const MikroTikException(this.message, [this.code]);
+  
+  @override
+  String toString() {
+    return code != null ? 'MikroTikException ($code): $message' : 'MikroTikException: $message';
+  }
+}
+
+/// حالات الاتصال
+enum MikroTikConnectionStatus {
+  disconnected,
+  connecting,
+  connected,
+  authenticating,
+  authenticated,
+  error
+}"
