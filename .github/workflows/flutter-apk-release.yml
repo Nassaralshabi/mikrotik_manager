@@ -49,17 +49,23 @@ jobs:
       #  للتوقيع. إن لم تُعُدّ Secrets، يُستخدم debug signing.
       # ============================================================
       - name: Decode keystore from secrets
-        if: ${{ env.KEYSTORE_BASE64 != '' }}
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        id: decode-keystore
+        # Run this step only when the secret exists.
+        # NOTE: 'if: env.KEYSTORE_BASE64' would never be true because
+        # env vars from the 'env:' block are NOT visible to the 'if:'
+        # condition of the same step — only secrets.X is.
+        if: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           mkdir -p android/app/keystore
-          echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore/release.jks
+          # decode the base64 secret directly (no intermediate env needed)
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/keystore/release.jks
           echo "Keystore decoded successfully:"
           ls -lh android/app/keystore/release.jks
           echo "Absolute path: $(pwd)/android/app/keystore/release.jks"
           # تحقق سريع من صحة الـ keystore (بدون كشف كلمة السر)
           file android/app/keystore/release.jks || true
+          # export a step output the build step can check
+          echo "decoded=true" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         run: flutter pub get
@@ -100,7 +106,10 @@ jobs:
       # ============================================================
       - name: Build optimized release APK (arm64 only - minimal size)
         env:
-          KEYSTORE_PATH: ${{ secrets.KEYSTORE_BASE64 != '' && 'android/app/keystore/release.jks' || '' }}
+          # set KEYSTORE_PATH only if the decode step ran and set decoded=true;
+          # otherwise KEYSTORE_PATH is empty and build.gradle will fall back
+          # to debug signing (already supported).
+          KEYSTORE_PATH: ${{ steps.decode-keystore.outputs.decoded == 'true' && 'android/app/keystore/release.jks' || '' }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
