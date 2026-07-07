@@ -7,7 +7,7 @@ import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:uuid/uuid.dart';
 
-class MqttService with ChangeNotifier {
+class MqttService {
   MqttServerClient? _client;
   String? _deviceId;
   final String _broker = 'ue1f6bff.ala.us-east-1.emqxsl.com';
@@ -16,13 +16,18 @@ class MqttService with ChangeNotifier {
   String _password = '';
   final String _mainTopic = 'MyChatApp/ali/inbox';
   String? _responseTopic;
-  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
+  GlobalKey<ScaffoldMessengerState>? scaffoldMessengerKey;
 
   final StreamController<Map<String, dynamic>> _messageStreamController =
       StreamController.broadcast();
   Stream<Map<String, dynamic>> get messages => _messageStreamController.stream;
 
-  MqttService({required this.scaffoldMessengerKey}) {
+  MqttService({this.scaffoldMessengerKey}) {
+    _initializeDeviceId();
+  }
+
+  /// Constructor without UI dependency — for Riverpod usage
+  MqttService.noUi() : scaffoldMessengerKey = null {
     _initializeDeviceId();
   }
 
@@ -147,7 +152,7 @@ class MqttService with ChangeNotifier {
       
       // لا تعيد المحاولة تلقائياً هنا، اترك المنطق في الواجهة يقرر إعادة الإرسال
       checkAndReconnect();
-      scaffoldMessengerKey.currentState?.showSnackBar(
+      scaffoldMessengerKey?.currentState?.showSnackBar(
         const SnackBar(
           content: Text('فشل الإرسال، جارٍ إعادة الاتصال. حاول مرة أخرى بعد قليل.'),
           backgroundColor: Colors.orange,
@@ -169,10 +174,8 @@ class MqttService with ChangeNotifier {
     return const Uuid().v4();
   }
 
-  @override
   void dispose() {
     _messageStreamController.close();
     _client?.disconnect();
-    super.dispose();
   }
 }

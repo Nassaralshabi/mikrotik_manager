@@ -124,20 +124,36 @@ class HistoryManager extends StateNotifier<AsyncValue<List<DiagnosticSession>>> 
 
 final diagnosticsProvider =
     StateNotifierProvider<DiagnosticsNotifier, DiagnosticsState>((ref) {
-  final settings = ref.watch(aiSettingsProvider).valueOrNull ?? AiSettings.default_;
-  return DiagnosticsNotifier(settings);
+  return DiagnosticsNotifier(ref);
 });
 
 class DiagnosticsNotifier extends StateNotifier<DiagnosticsState> {
+  final Ref _ref;
   DiagnosticSession? _currentSession;
 
-  DiagnosticsNotifier(AiSettings settings)
-      : super(DiagnosticsState.initial(settings)) {
-    // ابدأ جلسة جديدة عند الإنشاء
-    _currentSession = DiagnosticSession.start(
-      mode: settings.mode,
-      mikrotikIp: null, // سيُحدّث لاحقاً عند جمع البيانات
-    );
+  DiagnosticsNotifier(this._ref)
+      : super(DiagnosticsState.initial(AiSettings.default_)) {
+    // Load settings and listen for changes
+    _initSettings();
+  }
+
+  Future<void> _initSettings() async {
+    final settings = _ref.read(aiSettingsNotifierProvider).valueOrNull ?? AiSettings.default_;
+    // Update settings regardless (even if apiKey is empty, other fields may have changed)
+    state = state.copyWith(settings: settings);
+    if (_currentSession == null) {
+      _currentSession = DiagnosticSession.start(
+        mode: settings.mode,
+        mikrotikIp: null,
+      );
+    }
+    // Listen for future settings changes without recreating the notifier
+    _ref.listenManual(aiSettingsNotifierProvider, (_, next) {
+      final newSettings = next.valueOrNull;
+      if (newSettings != null) {
+        updateSettings(newSettings);
+      }
+    });
   }
 
   /// الجلسة الحالية (للوصول من UI)

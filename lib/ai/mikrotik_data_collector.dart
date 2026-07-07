@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:router_os_client/router_os_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../mikrotik_connector.dart';
 import 'diagnostics_models.dart';
 
 class MikrotikDataCollector {
@@ -100,31 +101,38 @@ class MikrotikDataCollector {
 
     try {
       if (internalClient == null) {
-        // قراءة بيانات الاعتماد من SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        final ip = prefs.getString('ip');
-        final user = prefs.getString('user');
-        final pass = prefs.getString('pass');
-        final portStr = prefs.getString('port') ?? '8728';
-        final port = int.tryParse(portStr) ?? 8728;
+        // استخدم الاتصال المُخزّن من MikrotikConnector أولاً
+        try {
+          internalClient = await MikrotikConnector.connect();
+          debugPrint('[MikrotikDataCollector] Reusing cached connection');
+        } catch (e) {
+          debugPrint('[MikrotikDataCollector] Cache miss, creating new connection: $e');
+          // إذا فشل الاتصال المُخزّن، أنشئ اتصالاً جديداً
+          final prefs = await SharedPreferences.getInstance();
+          final ip = prefs.getString('ip');
+          final user = prefs.getString('user');
+          final pass = prefs.getString('pass');
+          final portStr = prefs.getString('port') ?? '8728';
+          final port = int.tryParse(portStr) ?? 8728;
 
-        if (ip == null || user == null || pass == null) {
-          throw Exception('بيانات اعتماد MikroTik غير موجودة. سجّل الدخول أولاً.');
-        }
+          if (ip == null || user == null || pass == null) {
+            throw Exception('بيانات اعتماد MikroTik غير موجودة. سجّل الدخول أولاً.');
+          }
 
-        debugPrint('[MikrotikDataCollector] Connecting via RouterOS API to $ip:$port');
-        internalClient = RouterOSClient(
-          address: ip,
-          user: user,
-          password: pass,
-          port: port,
-          verbose: false,
-        );
-        final ok = await internalClient.login().timeout(timeout);
-        if (!ok) {
-          throw Exception('فشل تسجيل الدخول إلى MikroTik');
+          debugPrint('[MikrotikDataCollector] Connecting via RouterOS API to $ip:$port');
+          internalClient = RouterOSClient(
+            address: ip,
+            user: user,
+            password: pass,
+            port: port,
+            verbose: false,
+          );
+          final ok = await internalClient.login().timeout(timeout);
+          if (!ok) {
+            throw Exception('فشل تسجيل الدخول إلى MikroTik');
+          }
+          createdInternally = true;
         }
-        createdInternally = true;
       }
 
       // تنفيذ أوامر RouterOS API
