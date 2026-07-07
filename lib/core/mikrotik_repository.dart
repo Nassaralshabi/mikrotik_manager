@@ -39,7 +39,7 @@ class CredentialsNotFound extends MikrotikFailure {
 }
 
 class TimeoutFailure extends MikrotikFailure {
-  const TimeoutFailure([super.cause]) : super('انتهت مهلة الاتصال بـ MikroTik');
+  const TimeoutFailure([String? cause]) : super('انتهت مهلة الاتصال بـ MikroTik', cause);
 }
 
 class CommandFailure extends MikrotikFailure {
@@ -224,7 +224,7 @@ class MikrotikRepository implements IMikrotikRepository {
         );
       }
     }
-    throw const ConnectionFailure('فشل بعد $retries محاولات');
+    throw ConnectionFailure('فشل بعد $retries محاولات');
   }
 }
 

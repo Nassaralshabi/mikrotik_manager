@@ -339,7 +339,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             tooltip: 'تسجيل الخروج',
             onPressed: () {
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                MaterialPageRoute(builder: (context) => LoginScreen()),
               );
             },
           ),

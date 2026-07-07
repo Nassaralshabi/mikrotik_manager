@@ -56,6 +56,11 @@ class ActiveUsersState {
         page: 0,
         pageSize: pageSize,
       );
+
+  /// Backward compatibility getters (for V2 UI)
+  bool get loading => result.isLoading;
+  String? get error => result.errorOrNull;
+  List<Map<String, dynamic>> get cachedItems => items;
 }
 
 /// Notifier محسّن:

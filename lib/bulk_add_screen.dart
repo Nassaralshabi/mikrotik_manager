@@ -58,6 +58,9 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
   String _charType = 'numbers';
   String _cardType = 'username_only';
   bool _linkPasswordToFirstUser = false;
+  List<SaveLocation> _saveLocations = [SaveLocation.mikrotikDevice];
+  int _sharedUsers = 1;
+  List<String> _sharedUsersList = [];
   
   // القوالب والقالب المختار
   List<PdfTemplate> _templates = [];
@@ -533,9 +536,9 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
 
 
   /// يحفظ الكروت في الوجهات الإضافية بعد الإنشاء على MikroTik
-  Future<void> _saveCardsToAdditionalLocations(List<Map<String, dynamic>> cards) async {
+  Future<void> _saveCardsToAdditionalLocations(List<Map<String, String>> cards) async {
     for (final location in _saveLocations) {
-      if (location == SaveLocation.mikrotikDevice) continue; // تم الحفظ على MikroTik بالفعل
+      if (location == SaveLocation.mikrotikDevice) continue;
       
       for (final card in cards) {
         await CardSaveService.instance.saveCard(
@@ -543,7 +546,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
             username: card['username'] as String? ?? '',
             password: card['password'] as String?,
             profileName: _selectedProfile,
-            sharedUsers: _sharedUsers,
+            sharedUsers: int.tryParse(_sharedUsersController.text) ?? 1,
           ),
           location: location,
           context: context,

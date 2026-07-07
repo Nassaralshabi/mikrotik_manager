@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @immutable
 sealed class AppResult<T> {
@@ -33,7 +34,7 @@ extension AppResultX<T> on AppResult<T> {
       AppSuccess(:final data) => AsyncValue.data(data),
       AppFailure(:final message, :final cause, :final stackTrace) =>
         AsyncValue.error(AppException(message, cause), stackTrace ?? StackTrace.current),
-      AppLoading() => const AsyncValue.loading(),
+      AppLoading() => AsyncValue.loading(),
     };
   }
 
