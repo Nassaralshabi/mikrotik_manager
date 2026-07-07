@@ -57,6 +57,9 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore/release.jks
           echo "Keystore decoded successfully:"
           ls -lh android/app/keystore/release.jks
+          echo "Absolute path: $(pwd)/android/app/keystore/release.jks"
+          # تحقق سريع من صحة الـ keystore (بدون كشف كلمة السر)
+          file android/app/keystore/release.jks || true
 
       - name: Install dependencies
         run: flutter pub get
