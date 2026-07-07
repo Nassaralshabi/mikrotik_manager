@@ -30,6 +30,7 @@ import 'package:mikrotik_manager/monthly_report_screen.dart';
 import 'package:mikrotik_manager/card_search_screen.dart';
 import 'package:mikrotik_manager/snackbar_helpers.dart';
 import 'package:mikrotik_manager/v2/ui/active_users_v2.dart';
+import 'package:mikrotik_manager/shared/widgets/sync_dialog.dart';
 import 'package:mikrotik_manager/v2/ui/cards_statistics_v2.dart';
 import 'package:mikrotik_manager/perf/device_capability.dart';
 import 'package:mikrotik_manager/core/router/custom_page_route.dart';
@@ -301,6 +302,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const BackupSystemScreen()));
+        },
+      ),
+      ServiceItem(
+        title: 'مزامنة الكروت',
+        icon: Icons.sync,
+        color: const Color(0xFF66BB6A), // Light Green
+        onTap: () async {
+          await showSyncDialog(context);
+          // بعد المزامنة، أعد تحميل الملفات الشخصية
+          _fetchProfiles();
         },
       ),
     ];
