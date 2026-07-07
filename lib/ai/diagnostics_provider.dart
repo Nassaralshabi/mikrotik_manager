@@ -124,7 +124,17 @@ class HistoryManager extends StateNotifier<AsyncValue<List<DiagnosticSession>>> 
 
 final diagnosticsProvider =
     StateNotifierProvider<DiagnosticsNotifier, DiagnosticsState>((ref) {
-  return DiagnosticsNotifier(ref);
+  final notifier = DiagnosticsNotifier(ref);
+
+  // استمع لتغييرات الإعدادات من هنا (ref.listen متاح في Provider factory)
+  ref.listen(aiSettingsNotifierProvider, (_, next) {
+    final newSettings = next.valueOrNull;
+    if (newSettings != null) {
+      notifier.updateSettings(newSettings);
+    }
+  });
+
+  return notifier;
 });
 
 class DiagnosticsNotifier extends StateNotifier<DiagnosticsState> {
@@ -147,13 +157,8 @@ class DiagnosticsNotifier extends StateNotifier<DiagnosticsState> {
         mikrotikIp: null,
       );
     }
-    // Listen for future settings changes without recreating the notifier
-    _ref.listenManual(aiSettingsNotifierProvider, (_, next) {
-      final newSettings = next.valueOrNull;
-      if (newSettings != null) {
-        updateSettings(newSettings);
-      }
-    });
+    // Settings changes are now listened from provider factory via ref.listen
+    // No need for listenManual here (not available in Riverpod 2.6.1)
   }
 
   /// الجلسة الحالية (للوصول من UI)

@@ -3,6 +3,7 @@
 //  استُخرجت من main.dart لتقليل حجمه
 // ============================================================
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -32,6 +33,7 @@ import 'package:mikrotik_manager/v2/ui/active_users_v2.dart';
 import 'package:mikrotik_manager/v2/ui/cards_statistics_v2.dart';
 import 'package:mikrotik_manager/perf/device_capability.dart';
 import 'package:mikrotik_manager/core/router/custom_page_route.dart';
+import 'package:mikrotik_manager/shared/widgets/custom_loading_indicator.dart';
 import 'package:mikrotik_manager/network_doctor_screen.dart';
 import 'package:mikrotik_manager/network_tools_screen.dart';
 import 'package:mikrotik_manager/network_map_screen.dart';
@@ -70,6 +72,8 @@ class ServiceItem {
     required this.onTap,
   });
 }
+
+enum MikrotikMode { userManager, hotspot }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<Map<String, dynamic>> _profiles = [];
@@ -324,14 +328,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             tooltip: 'تسجيل الخروج',
             onPressed: () {
               Navigator.of(context).pushReplacement(
-                CustomPageRoute(builder: (context) => const LoginScreen()),
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
               );
             },
           ),
         ],
       ),
       body: _isLoadingProfiles
-          ? const CustomLoadingIndicator(message: 'جاري التحميل...')
+          ? CustomLoadingIndicator(message: 'جاري التحميل...')
           : SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

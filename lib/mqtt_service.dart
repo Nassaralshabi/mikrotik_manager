@@ -7,7 +7,7 @@ import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:uuid/uuid.dart';
 
-class MqttService {
+class MqttService with ChangeNotifier {
   MqttServerClient? _client;
   String? _deviceId;
   final String _broker = 'ue1f6bff.ala.us-east-1.emqxsl.com';
@@ -177,5 +177,6 @@ class MqttService {
   void dispose() {
     _messageStreamController.close();
     _client?.disconnect();
+    super.dispose();
   }
 }

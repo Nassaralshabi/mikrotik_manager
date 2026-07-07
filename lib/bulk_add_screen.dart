@@ -20,6 +20,8 @@ import 'mqtt_service.dart';
 import 'pdf_templates_screen.dart';
 import 'pdf_generator.dart';
 import 'snackbar_helpers.dart';
+import 'shared/widgets/save_location_selector.dart';
+import 'core/services/card_save_service.dart';
 
 class BulkAddScreen extends StatefulWidget {
   final List<Map<String, dynamic>> profiles;
@@ -233,6 +235,9 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                 'password': e['password'] as String,
               },
           ];
+          // حفظ الكروت في الوجهات الإضافية المختارة
+          _saveCardsToAdditionalLocations(simplifiedUsers);
+
           _showSuccessDialog(simplifiedUsers);
         }
 
@@ -527,6 +532,26 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
   }
 
 
+  /// يحفظ الكروت في الوجهات الإضافية بعد الإنشاء على MikroTik
+  Future<void> _saveCardsToAdditionalLocations(List<Map<String, dynamic>> cards) async {
+    for (final location in _saveLocations) {
+      if (location == SaveLocation.mikrotikDevice) continue; // تم الحفظ على MikroTik بالفعل
+      
+      for (final card in cards) {
+        await CardSaveService.instance.saveCard(
+          card: CardSaveData(
+            username: card['username'] as String? ?? '',
+            password: card['password'] as String?,
+            profileName: _selectedProfile,
+            sharedUsers: _sharedUsers,
+          ),
+          location: location,
+          context: context,
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     _prefixController.dispose();
@@ -702,7 +727,23 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                     keyboardType: TextInputType.number,
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'مطلوب' : null),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+                const Divider(color: Colors.white12),
+                const SizedBox(height: 8),
+                SaveLocationSelector(
+                  availableLocations: const [
+                    SaveLocation.mikrotikDevice,
+                    SaveLocation.localDatabase,
+                    SaveLocation.pdfFile,
+                    SaveLocation.all,
+                  ],
+                  defaultLocation: SaveLocation.mikrotikDevice,
+                  mode: SelectionMode.single,
+                  onChanged: (locations) {
+                    _saveLocations = locations;
+                  },
+                ),
+                const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: _isGenerating ? null : _generateUsers,
                   icon: const Icon(Icons.apps_outage_rounded),
