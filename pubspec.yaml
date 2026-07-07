@@ -14,6 +14,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   router_os_client: ^2.0.0
   dio: ^5.5.0+1
+  html: ^0.15.4
   mqtt_client: ^10.2.1
   url_launcher: ^6.3.0
   shared_preferences: ^2.2.3

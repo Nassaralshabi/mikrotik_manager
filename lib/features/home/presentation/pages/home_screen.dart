@@ -35,6 +35,7 @@ import 'package:mikrotik_manager/v2/ui/cards_statistics_v2.dart';
 import 'package:mikrotik_manager/perf/device_capability.dart';
 import 'package:mikrotik_manager/core/router/custom_page_route.dart';
 import 'package:mikrotik_manager/shared/widgets/custom_loading_indicator.dart';
+import 'package:mikrotik_manager/network_doctor_screen.dart';
 import 'package:mikrotik_manager/network_tools_screen.dart';
 import 'package:mikrotik_manager/network_map_screen.dart';
 import 'package:mikrotik_manager/rogue_dhcp_detector_screen.dart';
@@ -43,6 +44,7 @@ import 'package:mikrotik_manager/device_monitoring_screen.dart';
 import 'package:mikrotik_manager/edit_pdf_template_screen.dart';
 import 'package:mikrotik_manager/process_image_screen.dart';
 import 'package:mikrotik_manager/features/auth/presentation/pages/login_screen.dart' hide CustomLoadingIndicator;
+import 'package:mikrotik_manager/screens/user_manager_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool isVersion7OrNewer;
@@ -247,6 +249,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onTap: () {
           Navigator.of(context)
               .push(CustomPageRoute(builder: (context) => const CardsStatisticsScreen()));
+        },
+      ),
+      ServiceItem(
+        title: 'كروت عن بُعد (User Manager)',
+        icon: Icons.cloud_done_outlined,
+        color: const Color(0xFF6A1B9A), // Deep Purple
+        onTap: () {
+          Navigator.of(context)
+              .push(CustomPageRoute(builder: (context) => const UserManagerScreen()));
         },
       ),
       ServiceItem(
