@@ -1,0 +1,10 @@
+# ============================================================
+#  مثال على ملف key.properties — لا ترفع النسخة الحقيقية للـ repo
+#  انسخه إلى: android/key.properties
+#  واملأ البيانات من الـ keystore الذي ولّدته
+# ============================================================
+
+storePassword=MikroTik@Release@2026!
+keyPassword=MikroTik@Release@2026!
+keyAlias=mikrotik-release
+storeFile=keystore/release.jks

@@ -20,6 +20,24 @@ if (localPropertiesFile.exists()) {
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
+// ============================================================
+//  Signing config — يقرأ key.properties المحلي أو بيئة الـ CI
+//  الأولوية:
+//   1) متغيرات بيئة CI (KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD)
+//   2) ملف android/key.properties محلياً
+//   3) fallback إلى signingConfigs.debug
+// ============================================================
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+}
+
+def isCiSigning = System.env.KEYSTORE_PATH != null && !System.env.KEYSTORE_PATH.isEmpty()
+def hasKeyProperties = keystoreProperties.getProperty('storeFile') != null
+
 android {
     namespace "com.example.mikrotik_manager"
     compileSdk 36
@@ -67,9 +85,32 @@ android {
     // بدلاً من ذلك نستخدم --target-platform + --split-per-abi في flutter build
     // هذا يعطي نفس النتيجة (APK منفصل لكل معمارية) بدون تعارض
 
+    // ============================================================
+    //  Signing Configs — release keystore من CI env أو key.properties
+    // ============================================================
+    signingConfigs {
+        release {
+            if (isCiSigning) {
+                // في CI: متغيرات البيئة تأتي من GitHub Secrets
+                storeFile file(System.env.KEYSTORE_PATH)
+                storePassword System.env.KEYSTORE_PASSWORD
+                keyAlias System.env.KEY_ALIAS
+                keyPassword System.env.KEY_PASSWORD
+            } else if (hasKeyProperties) {
+                // محلياً: من ملف key.properties
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
+            // وإلا fallback إلى signingConfigs.debug (يُحدّد لاحقاً)
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            // استخدم signing release إن وُجد، وإلا debug (للتطوير)
+            signingConfig (isCiSigning || hasKeyProperties) ? signingConfigs.release : signingConfigs.debug
 
             // ===== R8 / ProGuard — أهم خطوة لتقليل الحجم =====
             minifyEnabled true       // إزالة الكود الميت (~30% تقليل)

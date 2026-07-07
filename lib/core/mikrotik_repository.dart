@@ -12,6 +12,7 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:router_os_client/router_os_client.dart';
 
 import 'secure_credentials.dart';
@@ -240,8 +241,6 @@ double pow(double x, int exponent) {
 // ============================================================
 //  Riverpod Provider
 // ============================================================
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Provider رئيسي — يحقن MikrotikRepository في كل التطبيق
 final mikrotikRepositoryProvider = Provider<IMikrotikRepository>((ref) {

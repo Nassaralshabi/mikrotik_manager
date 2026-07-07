@@ -8,6 +8,16 @@ on:
       - 'improvements/capy-v2-riverpod'
   workflow_dispatch:
 
+# ============================================================
+#  GitHub Secrets المطلوبة للتوقيع:
+#   - KEYSTORE_BASE64: base64 من ملف .jks (احفظه من ملف keystore_base64.txt)
+#   - KEYSTORE_PASSWORD: كلمة سر الـ keystore
+#   - KEY_ALIAS: alias المفتاح (مثلاً: mikrotik-release)
+#   - KEY_PASSWORD: كلمة سر المفتاح
+#
+#  إذا لم تكن مُعيّنة، سيُبنى APK بـ debug signing (للتطوير فقط).
+# ============================================================
+
 jobs:
   build-release-apk:
     runs-on: ubuntu-latest
@@ -32,6 +42,21 @@ jobs:
 
       - name: Verify Flutter version
         run: flutter --version
+
+      # ============================================================
+      #  استرجاع الـ keystore من GitHub Secrets (إن وُجد)
+      #  يُنشئ ملف android/app/keystore/release.jks ويُصدّر متغيرات البيئة
+      #  للتوقيع. إن لم تُعُدّ Secrets، يُستخدم debug signing.
+      # ============================================================
+      - name: Decode keystore from secrets
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p android/app/keystore
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore/release.jks
+          echo "Keystore decoded successfully:"
+          ls -lh android/app/keystore/release.jks
 
       - name: Install dependencies
         run: flutter pub get
@@ -71,6 +96,11 @@ jobs:
       #  النتيجة المتوقعة: APK ~ 60-70% أصغر من البناء الافتراضي
       # ============================================================
       - name: Build optimized release APK (arm64 only - minimal size)
+        env:
+          KEYSTORE_PATH: ${{ secrets.KEYSTORE_BASE64 != '' && 'android/app/keystore/release.jks' || '' }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           flutter build apk --release \
             --target-platform android-arm64 \

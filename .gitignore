@@ -49,3 +49,12 @@ app.*.map.json
 .env.local
 .env.production
 
+# ============================================================
+#  Signing / Keystore — أسرار التوقيع (لا تُرفع أبداً)
+#  تُدار عبر GitHub Secrets في CI
+# ============================================================
+/android/app/keystore/
+/android/key.properties
+*.jks
+*.keystore
+key.properties

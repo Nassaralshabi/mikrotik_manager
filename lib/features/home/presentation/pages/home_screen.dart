@@ -35,7 +35,6 @@ import 'package:mikrotik_manager/v2/ui/cards_statistics_v2.dart';
 import 'package:mikrotik_manager/perf/device_capability.dart';
 import 'package:mikrotik_manager/core/router/custom_page_route.dart';
 import 'package:mikrotik_manager/shared/widgets/custom_loading_indicator.dart';
-import 'package:mikrotik_manager/network_doctor_screen.dart';
 import 'package:mikrotik_manager/network_tools_screen.dart';
 import 'package:mikrotik_manager/network_map_screen.dart';
 import 'package:mikrotik_manager/rogue_dhcp_detector_screen.dart';
@@ -43,7 +42,7 @@ import 'package:mikrotik_manager/system_dashboard_screen.dart';
 import 'package:mikrotik_manager/device_monitoring_screen.dart';
 import 'package:mikrotik_manager/edit_pdf_template_screen.dart';
 import 'package:mikrotik_manager/process_image_screen.dart';
-import 'package:mikrotik_manager/network_doctor_screen.dart';
+import 'package:mikrotik_manager/features/auth/presentation/pages/login_screen.dart' hide CustomLoadingIndicator;
 
 class HomeScreen extends StatefulWidget {
   final bool isVersion7OrNewer;
@@ -339,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             tooltip: 'تسجيل الخروج',
             onPressed: () {
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => LoginScreen()),
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
               );
             },
           ),
