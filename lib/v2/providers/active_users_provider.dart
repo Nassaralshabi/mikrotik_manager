@@ -1,12 +1,22 @@
+// ============================================================
+//  ActiveUsersProvider — V2 محسّن مع AppResult + MikrotikRepository
+//
+//  التحسينات:
+//  1. يستخدم IMikrotikRepository بدل RouterService
+//  2. يستخدم AppResult<T> لنمط Success/Failure/Loading
+//  3. const constructor للـ State
+//  4. select() + cache + autoDispose
+// ============================================================
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/router_service.dart';
+import '../../core/mikrotik_repository.dart';
+import '../../core/errors/app_result.dart';
 import 'optimized_providers.dart';
 
-/// State يستخدم قيم final و const لتقليل الـ allocations
+/// State مع const constructor
 class ActiveUsersState {
   final List<Map<String, dynamic>> items;
-  final bool loading;
-  final String? error;
+  final AppResult<List<Map<String, dynamic>>> result;
   final bool hotspot;
   final bool serverPaging;
   final int page;
@@ -14,30 +24,24 @@ class ActiveUsersState {
 
   const ActiveUsersState({
     required this.items,
-    required this.loading,
-    required this.error,
+    required this.result,
     required this.hotspot,
     required this.serverPaging,
     required this.page,
     required this.pageSize,
   });
 
-  /// نسخة محسّنة: فقط الحقول المتغيّرة تُنشأ من جديد
   ActiveUsersState copyWith({
     List<Map<String, dynamic>>? items,
-    bool? loading,
-    String? error,
+    AppResult<List<Map<String, dynamic>>>? result,
     bool? hotspot,
     bool? serverPaging,
     int? page,
     int? pageSize,
-    // لتمييز "null" عن "عدم التغيير" في error
-    bool clearError = false,
   }) =>
       ActiveUsersState(
         items: items ?? this.items,
-        loading: loading ?? this.loading,
-        error: clearError ? null : (error ?? this.error),
+        result: result ?? this.result,
         hotspot: hotspot ?? this.hotspot,
         serverPaging: serverPaging ?? this.serverPaging,
         page: page ?? this.page,
@@ -46,8 +50,7 @@ class ActiveUsersState {
 
   static ActiveUsersState initial(int pageSize) => ActiveUsersState(
         items: const [],
-        loading: false,
-        error: null,
+        result: const AppLoading(stage: 'idle'),
         hotspot: true,
         serverPaging: false,
         page: 0,
@@ -56,16 +59,17 @@ class ActiveUsersState {
 }
 
 /// Notifier محسّن:
-/// 1) يأخذ ref للوصول إلى cache
-/// 2) يستخدم cache لتجنّب إعادة الجلب عند العودة لصفحة سابقة
-/// 3) لا يُحدث state عند الفشل (يمنع إعادة بناء الواجهة بلا داعي)
+/// - يستخدم IMikrotikRepository (Riverpod DI)
+/// - ResponseCache لتجنّب إعادة الجلب
+/// - AppResult للحالات الثلاث
 class ActiveUsersNotifier extends StateNotifier<ActiveUsersState> {
   ActiveUsersNotifier(this._ref, {this.pageSize = 20})
       : super(ActiveUsersState.initial(pageSize));
 
   final Ref _ref;
   final int pageSize;
-  final _service = RouterService();
+
+  IMikrotikRepository get _repo => _ref.read(mikrotikRepositoryProvider);
 
   String _cacheKey(int p) => 'active_users_p$p';
 
@@ -73,26 +77,24 @@ class ActiveUsersNotifier extends StateNotifier<ActiveUsersState> {
     final targetPage = page ?? state.page;
     final cache = _ref.read(responseCacheProvider);
     final cached = cache.get(_cacheKey(targetPage));
+
     if (cached != null) {
-      // استخدم cache ⇒ لا loading state ⇒ لا flicker
-      state = state.copyWith(
-        items: cached,
-        page: targetPage,
-        clearError: true,
-      );
+      state = state.copyWith(items: cached, page: targetPage, result: AppSuccess(cached));
       return;
     }
 
-    // اعرض loading فقط إذا كانت القائمة فارغة (تجنّب flicker)
-    final showLoading = state.items.isEmpty;
-    if (showLoading) {
-      state = state.copyWith(loading: true, page: targetPage, clearError: true);
+    // Show loading only if list is empty (avoid flicker)
+    if (state.items.isEmpty) {
+      state = state.copyWith(
+        page: targetPage,
+        result: const AppLoading(stage: 'جاري التحميل...'),
+      );
     }
 
     try {
-      // محاولة سريعة: paging على مستوى الخادم
+      // Try hotspot with paging first
       try {
-        final res = await _service.talkPaged(
+        final res = await _repo.talkPaged(
           path: '/ip/hotspot/active/print',
           proplist: 'user,address,uptime',
           limit: pageSize,
@@ -103,65 +105,40 @@ class ActiveUsersNotifier extends StateNotifier<ActiveUsersState> {
           items: res,
           hotspot: true,
           serverPaging: true,
-          loading: false,
           page: targetPage,
-          clearError: true,
+          result: AppSuccess(res),
         );
         return;
       } catch (_) {}
 
-      // محاولة ثانية: hotspot بدون paging
-      final resHot = await _service
-          .talk(['/ip/hotspot/active/print', '=.proplist=user,address,uptime']);
+      // Fallback to hotspot without paging
+      final resHot = await _repo.talk([
+        '/ip/hotspot/active/print',
+        '=.proplist=user,address,uptime',
+      ]);
       cache.put(_cacheKey(targetPage), resHot);
       state = state.copyWith(
-        items: resHot,
-        hotspot: true,
-        serverPaging: false,
-        loading: false,
-        page: targetPage,
-        clearError: true,
+        items: resHot, hotspot: true, serverPaging: false,
+        page: targetPage, result: AppSuccess(resHot),
       );
-    } catch (_) {
-      // محاولة أخيرة: user-manager
+    } catch (e) {
+      // Fallback to user-manager
       try {
-        final res = await _service.talkPaged(
+        final res = await _repo.talkPaged(
           path: '/tool/user-manager/session/print',
           proplist: 'user,session-time-left,framed-ip-address,uptime',
-          limit: pageSize,
-          skip: targetPage * pageSize,
+          limit: pageSize, skip: targetPage * pageSize,
         );
         cache.put(_cacheKey(targetPage), res);
         state = state.copyWith(
-          items: res,
-          hotspot: false,
-          serverPaging: true,
-          loading: false,
-          page: targetPage,
-          clearError: true,
+          items: res, hotspot: false, serverPaging: true,
+          page: targetPage, result: AppSuccess(res),
         );
-      } catch (_) {
-        try {
-          final res = await _service.talk([
-            '/tool/user-manager/session/print',
-            '=.proplist=user,session-time-left,framed-ip-address,uptime'
-          ]);
-          cache.put(_cacheKey(targetPage), res);
-          state = state.copyWith(
-            items: res,
-            hotspot: false,
-            serverPaging: false,
-            loading: false,
-            page: targetPage,
-            clearError: true,
-          );
-        } catch (e) {
-          state = state.copyWith(
-            loading: false,
-            error: e.toString(),
-            page: targetPage,
-          );
-        }
+      } catch (e) {
+        state = state.copyWith(
+          page: targetPage,
+          result: AppFailure('فشل تحميل المستخدمين النشطين', cause: e),
+        );
       }
     }
   }
@@ -179,7 +156,6 @@ class ActiveUsersNotifier extends StateNotifier<ActiveUsersState> {
     fetch(page: p);
   }
 
-  /// مسح الـ cache عند الـ pull-to-refresh
   void refresh() {
     final cache = _ref.read(responseCacheProvider);
     cache.invalidate(_cacheKey(state.page));

@@ -1,14 +1,42 @@
-# تكوين build_runner لتوليد كود drift
+# ============================================================
+#  build_runner Configuration
+#
+#  يدعم:
+#  - drift_dev: توليد كود قاعدة البيانات
+#  - freezed: توليد copyWith / == / hashCode للـ State
+#  - json_serializable: توليد fromJson/toJson
+#  - riverpod_generator: توليد Providers من @riverpod annotations
+# ============================================================
+
 targets:
   $default:
     builders:
       drift_dev:
         options:
-          # تخزين DateTime كـ TEXT (أوضح في SQLite)
           store_date_time_values_as_text: true
-          # استخدام named_parameters للوضوح
           named_parameters: true
-          # توليد تحذيرات قاتلة للأخطاء الحرجة
           fatal_warnings: true
-          # تخطي التحقق من الكود المُولّد (أسرع)
           skip_verification_code: false
+
+      freezed:
+        options:
+          explicit_to_json: true
+          json: true
+          union_key: type
+          union_value_case: snake
+
+      json_serializable:
+        options:
+          explicit_to_json: true
+          any_map: true
+          checked: true
+          create_factory: true
+          create_to_json: true
+
+      riverpod_generator:
+        options:
+          # استخدام Riverpod v2 annotations
+          provider_annotations:
+            - riverpod
+          # توليد select() تلقائي
+          auto_dispose: true

@@ -4,6 +4,7 @@
 // ============================================================
 
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'device_capability.dart';
 
 /// صورة مُخبّاة في الذاكرة بدقة مناسبة لحجم العرض
@@ -161,5 +162,40 @@ class PerfBoundary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(child: child);
+  }
+}
+
+/// صورة من ملف مع cacheWidth — لاستبدال Image.file في كل الشاشات
+/// يحل مشكلة تحميل صور كبيرة على الأجهزة الضعيفة
+class CachedFileImage extends StatelessWidget {
+  final File? file;
+  final double? width;
+  final double? height;
+  final BoxFit? fit;
+
+  const CachedFileImage({
+    super.key,
+    this.file,
+    this.width,
+    this.height,
+    this.fit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 1.0;
+    final targetWidth = width != null ? (width! * dpr).round() : null;
+
+    return Image.file(
+      file!,
+      width: width,
+      height: height,
+      fit: fit,
+      cacheWidth: targetWidth,
+      filterQuality: DeviceCapability.instance.isLowEnd
+          ? FilterQuality.low
+          : FilterQuality.medium,
+      gaplessPlayback: true,
+    );
   }
 }
