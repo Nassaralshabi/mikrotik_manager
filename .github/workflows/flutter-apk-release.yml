@@ -50,21 +50,21 @@ jobs:
       # ============================================================
       - name: Decode keystore from secrets
         id: decode-keystore
-        # Run this step only when the secret exists.
-        # NOTE: 'if: env.KEYSTORE_BASE64' would never be true because
-        # env vars from the 'env:' block are NOT visible to the 'if:'
-        # condition of the same step — only secrets.X is.
-        if: ${{ secrets.KEYSTORE_BASE64 }}
+        # Run this step only when the secret exists and is non-empty.
+        # NOTE: bare 'secrets.X' (without != '') is not a valid boolean
+        # expression in GitHub Actions if: conditions and causes the
+        # entire workflow to fail with 0 jobs.
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           mkdir -p android/app/keystore
-          # decode the base64 secret directly (no intermediate env needed)
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/keystore/release.jks
+          # decode the base64 secret via env var (safer than inline ${{ }})
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore/release.jks
           echo "Keystore decoded successfully:"
           ls -lh android/app/keystore/release.jks
           echo "Absolute path: $(pwd)/android/app/keystore/release.jks"
-          # تحقق سريع من صحة الـ keystore (بدون كشف كلمة السر)
           file android/app/keystore/release.jks || true
-          # export a step output the build step can check
           echo "decoded=true" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
