@@ -110,7 +110,11 @@ android {
     buildTypes {
         release {
             // استخدم signing release إن وُجد، وإلا debug (للتطوير)
-            signingConfig (isCiSigning || hasKeyProperties) ? signingConfigs.release : signingConfigs.debug
+            if (isCiSigning || hasKeyProperties) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
 
             // ===== R8 / ProGuard — أهم خطوة لتقليل الحجم =====
             minifyEnabled true       // إزالة الكود الميت (~30% تقليل)
