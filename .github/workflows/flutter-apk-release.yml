@@ -5,6 +5,7 @@ on:
     branches:
       - 'capy/v2-riverpod'
       - 'main'
+      - 'improvements/capy-v2-riverpod'
   workflow_dispatch:
 
 jobs:
