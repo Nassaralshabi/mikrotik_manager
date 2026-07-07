@@ -8,6 +8,8 @@ import 'package:dio/dio.dart';
 
 import 'mikrotik_connector.dart';
 import 'snackbar_helpers.dart';
+import 'shared/widgets/save_location_selector.dart';
+import 'core/services/card_save_service.dart';
 
 class AddUserScreen extends StatefulWidget {
   final List<Map<String, dynamic>> profiles;
@@ -34,6 +36,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
   String? _selectedProfile;
   String _cardType = 'username_only';
   String _charType = 'numbers';
+  List<SaveLocation> _saveLocations = [SaveLocation.mikrotikDevice];
 
   final String telegramBotToken = '';
   final String telegramChatId = '';
@@ -123,8 +126,29 @@ class _AddUserScreenState extends State<AddUserScreen> {
 
       if (mounted) {
         showSuccessSnackBar(context, 'تمت إضافة المستخدم "$username" بنجاح');
+
+        // حفظ في الوجهات الإضافية حسب اختيار المستخدم
+        for (final location in _saveLocations) {
+          if (location != SaveLocation.mikrotikDevice) {
+            final result = await CardSaveService.instance.saveCard(
+              card: CardSaveData(
+                username: username,
+                password: password.isNotEmpty ? password : null,
+                profileName: _selectedProfile,
+                sharedUsers: int.tryParse(sharedUsers) ?? 1,
+              ),
+              location: location,
+              context: context,
+            );
+            debugPrint('[SaveLocation] ${location.name}: ${result.summary}');
+          }
+        }
+
+        // نسخ إلى الحافظة (دائماً)
         Clipboard.setData(ClipboardData(text: cardDetails));
-        showSuccessSnackBar(context, 'تم نسخ تفاصيل الكرت!');
+        if (_saveLocations.contains(SaveLocation.pdfFile) || _saveLocations.contains(SaveLocation.all)) {
+          showSuccessSnackBar(context, 'تم حفظ الكرت في الملفات والـ PDF');
+        }
         Navigator.of(context).pop(true);
       }
     } on MikrotikCredentialsMissingException catch (e) {
@@ -264,7 +288,23 @@ class _AddUserScreenState extends State<AddUserScreen> {
                 ],
                 onChanged: (v) => setState(() => _charType = v!),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+              const Divider(color: Colors.white12),
+              const SizedBox(height: 8),
+              SaveLocationSelector(
+                availableLocations: const [
+                  SaveLocation.mikrotikDevice,
+                  SaveLocation.localDatabase,
+                  SaveLocation.pdfFile,
+                  SaveLocation.all,
+                ],
+                defaultLocation: SaveLocation.mikrotikDevice,
+                mode: SelectionMode.single,
+                onChanged: (locations) {
+                  _saveLocations = locations;
+                },
+              ),
+              const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _isLoading ? null : _addUser,
                 child: _isLoading
