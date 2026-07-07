@@ -92,12 +92,14 @@ android {
         release {
             if (isCiSigning) {
                 // في CI: متغيرات البيئة تأتي من GitHub Secrets
-                storeFile file(System.env.KEYSTORE_PATH)
+                // KEYSTORE_PATH نسبي لجذر الـ repo، نستخدم rootProject.file لتفادي مضاعفة android/app/
+                storeFile rootProject.file(System.env.KEYSTORE_PATH)
                 storePassword System.env.KEYSTORE_PASSWORD
                 keyAlias System.env.KEY_ALIAS
                 keyPassword System.env.KEY_PASSWORD
             } else if (hasKeyProperties) {
                 // محلياً: من ملف key.properties
+                // storeFile نسبي لمجلد android/app/ (موقع build.gradle)
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
                 storeFile file(keystoreProperties['storeFile'])
