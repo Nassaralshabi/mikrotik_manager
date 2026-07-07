@@ -50,16 +50,17 @@ jobs:
       # ============================================================
       - name: Decode keystore from secrets
         id: decode-keystore
-        # Run this step only when the secret exists and is non-empty.
-        # NOTE: bare 'secrets.X' (without != '') is not a valid boolean
-        # expression in GitHub Actions if: conditions and causes the
-        # entire workflow to fail with 0 jobs.
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        # Run this step only when the secret is non-empty.
+        # NOTE: GitHub Actions evaluates env: block BEFORE if: at the step
+        # level, so env.KEYSTORE_BASE64 is visible in the if: condition
+        # (this is the pattern that worked in CI run #149).
+        # Bare 'secrets.X' (without != '') is NOT a valid boolean expr
+        # and causes the whole workflow to fail with 0 jobs (runs #150,#151).
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           mkdir -p android/app/keystore
-          # decode the base64 secret via env var (safer than inline ${{ }})
           echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore/release.jks
           echo "Keystore decoded successfully:"
           ls -lh android/app/keystore/release.jks
