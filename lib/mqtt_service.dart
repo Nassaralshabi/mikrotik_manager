@@ -100,11 +100,12 @@ class MqttService with ChangeNotifier {
   }
 
   /// جدولة إعادة المحاولة مع تأخير متزايد
+  /// جدولة إعادة المحاولة مع تأخير متزايد
   void _scheduleReconnect() {
     if (_isDisposed) return;
     _retryTimer?.cancel();
     // حساب التأخير: 2^n ثواني، بحد أقصى 30 ثانية
-    final delaySeconds = min(_maxRetryDelay, pow(2, _retryCount).toInt());
+    final delaySeconds = min(_maxRetryDelay, pow(2, min(_retryCount, 5)).toInt());
     _retryCount++;
     debugPrint('MQTT: Scheduling reconnect in ${delaySeconds}s (attempt $_retryCount)');
     _retryTimer = Timer(Duration(seconds: delaySeconds), () {
