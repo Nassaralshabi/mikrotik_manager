@@ -357,6 +357,48 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       setState(() => _errorMessage = 'الرجاء إدخال اسم المستخدم وكلمة المرور');
       return;
     }
+
+    // ============================================================
+    //  كشف ذكي لنوع الخادم البعيد:
+    //   - إذا كان الخادم URL HTTP/HTTPS كامل → User Manager (Web)
+    //   - إذا كان IP/host فقط + بورت 8728/8729 → RouterOS API
+    //  هذا يسمح للمستخدم بإدخال:
+    //   "http://ath.vpnbersama.us:13196/userman" → يفتح User Manager
+    //   "ath.vpnbersama.us" + port 8728 → RouterOS API
+    // ============================================================
+    final serverInput = _remoteServerController.text.trim();
+    final portInput = _remotePortController.text.trim();
+    final isHttpUrl = serverInput.toLowerCase().startsWith('http://') ||
+        serverInput.toLowerCase().startsWith('https://');
+
+    if (isHttpUrl) {
+      // ============================================================
+      //  مسار User Manager — فتح شاشة UserManagerScreen مباشرة
+      //  نمرّر الـ URL + credentials كـ initial values عبر SharedPreferences
+      // ============================================================
+      final prefs = await SharedPreferences.getInstance();
+      // نبني URL كامل: إن لم ينتهِ بـ /userman نضيفه
+      var umUrl = serverInput;
+      if (!umUrl.toLowerCase().contains('/userman')) {
+        // نزيل أي / في النهاية ثم نضيف /userman
+        umUrl = umUrl.replaceAll(RegExp(r'/+$'), '');
+        umUrl = '$umUrl/userman';
+      }
+      await prefs.setString('um_url', umUrl);
+      await prefs.setString('um_user', _remoteUserController.text.trim());
+      await prefs.setString('um_pass', _remotePassController.text);
+
+      if (mounted) {
+        Navigator.of(context).push(
+          CustomPageRoute(builder: (context) => const UserManagerScreen()),
+        );
+      }
+      return;
+    }
+
+    // ============================================================
+    //  مسار RouterOS API التقليدي
+    // ============================================================
     setState(() {
       _isLoading = true;
       _errorMessage = '';
@@ -367,7 +409,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       await prefs.setString('ip', _remoteServerController.text.trim());
       await prefs.setString('user', _remoteUserController.text.trim());
       await prefs.setString('pass', _remotePassController.text);
-      await prefs.setString('port', _remotePortController.text.trim().isEmpty ? '8728' : _remotePortController.text.trim());
+      await prefs.setString('port', portInput.isEmpty ? '8728' : portInput);
 
       try {
         await MikrotikConnector.connect();
