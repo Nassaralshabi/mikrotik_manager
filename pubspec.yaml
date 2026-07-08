@@ -1,104 +1,74 @@
 name: mikrotik_manager
-description: "A new Flutter project."
+description: "MikroTik Manager - تطبيق احترافي لإدارة راوترات MikroTik مع دعم العربية، إنشاء الكروت، OCR، النسخ الاحتياطي، وقوالب PDF."
 publish_to: 'none'
-version: 1.1.0+2
+version: 2.0.0+1
 
 environment:
-  sdk: '>=3.5.0 <4.0.0'
-  flutter: '>=3.24.0'
+  sdk: ^3.6.0
 
 dependencies:
   flutter:
     sdk: flutter
-
-  cupertino_icons: ^1.0.8
-  router_os_client: ^2.0.0
-  dio: ^5.5.0+1
-  html: ^0.15.4
-  mqtt_client: ^10.2.1
-  url_launcher: ^6.3.0
-  shared_preferences: ^2.2.3
+  flutter_localizations:
+    sdk: flutter
+  go_router: ^14.6.2
+  flutter_secure_storage: ^9.2.2
+  crypto: ^3.0.3
+  # State Management
+  flutter_riverpod: ^2.6.1
+  # HTTP Client
+  dio: ^5.7.0
+  # Local Database
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  # Charts
+  fl_chart: ^0.70.1
+  # Google Fonts
+  google_fonts: ^6.2.1
+  # Bottom Navigation
+  convex_bottom_bar: ^3.2.0
+  # Intl for NumberFormat
+  intl: ^0.20.2
+  # QR Code Generation
+  qr_flutter: ^4.1.0
+  # URL Launcher for printing
+  url_launcher: ^6.3.1
+  open_file: ^3.5.0
+  # Screenshots for printing/sharing
+  screenshot: ^3.0.0
+  # Share functionality
+  share_plus: ^10.1.3
+  # Path provider for saving files
   path_provider: ^2.1.5
-  csv: ^6.0.0
-  pdf: ^3.10.8
-  printing: ^5.14.0
+  # Permission handler for storage
+  permission_handler: ^12.0.1
+  # PDF generation
+  pdf: ^3.11.0
+  # Printing support
+  printing: ^5.13.0
+  print_bluetooth_thermal: ^1.1.9
+  google_mobile_ads: ^7.0.0
+  # ── OCR + Camera (Process Image) ──
+  google_mlkit_text_recognition: ^0.14.0
   image_picker: ^1.1.2
-  google_mlkit_text_recognition: ^0.11.0
-  camera: ^0.10.6
-  path: ^1.9.0
-  share_plus: ^11.1.0
-  permission_handler: ^11.3.1
-  intl: ^0.19.0
-  font_awesome_flutter: ^10.7.0
-  provider: ^6.1.2
-  flutter_riverpod: ^2.5.1
-  device_info_plus: ^10.1.0
-  uuid: ^4.4.0
-  graphview: ^1.2.0
-  dart_ping: ^8.0.1
-  file_picker: ^8.0.0+1   # <-- ✨ الحزمة الجديدة التي تمت إضافتها
-  syncfusion_flutter_pdf: ^26.1.39
-  image: ^4.5.4
-  google_mlkit_document_scanner: ^0.4.0
-  network_info_plus: ^5.0.3
-  fl_chart: ^0.69.0
-  # --- ✨ caching لطلبات HTTP ---
-  dio_cache_interceptor: ^3.5.0
-  dio_cache_interceptor_db_store: ^5.1.0
-  # --- ✨ AI Diagnostics ---
-  dartssh2: ^2.9.5                # اتصال SSH بـ MikroTik
-  flutter_secure_storage: ^9.2.2  # تخزين آمن لمفاتيح API
-  flutter_dotenv: ^5.1.0          # تحميل إعدادات من .env
-  # --- ✨ SQLite Database (drift) ---
-  drift: ^2.16.0                  # ORM type-safe لـ SQLite
-  sqlite3_flutter_libs: ^0.5.0    # Native SQLite binaries
-  # path_provider و path موجودان مسبقاً في الـ dependencies أعلاه
+  # ── Syncfusion PDF for advanced template editing ──
+  syncfusion_flutter_pdf: ^33.2.13
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^5.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.13
+  flutter_launcher_icons: ^0.14.3
 
-  flutter_lints: ^3.0.0
-  flutter_app_name: ^0.1.1
-  flutter_launcher_icons: ^0.14.1
-  integration_test:
-    sdk: flutter
-  # --- drift code generation ---
-  drift_dev: ^2.16.0
-  build_runner: ^2.4.0
 
 flutter:
   uses-material-design: true
-  
-  assets:
-    - assets/images/
-    # ملاحظة: .env غير مُضاف كـ asset لأنه في .gitignore
-    # المفاتيح تُحمّل من flutter_secure_storage بدل .env
 
-flutter_app_name:
-  name: "اداره الكروت"
-
-# --- ✨ تم إضافة هذا القسم لحل مشكلة التعارض ---
-dependency_overrides:
-  xml: ^6.3.0
-  graphview: 1.2.0
-
-# --- ✨ تكوين flutter_launcher_icons ---
 flutter_launcher_icons:
   android: true
-  ios: true
-  image_path: "assets/icon/app_icon.png"
-  web:
-    generate: true
-    image_path: "assets/icon/app_icon.png"
-  macos:
-    generate: true
-    image_path: "assets/icon/app_icon.png"
-  linux:
-    generate: true
-    image_path: "assets/icon/app_icon.png"
-  windows:
-    generate: true
-    image_path: "assets/icon/app_icon.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  ios: false
+  adaptive_icon_background: '#1A1A2E'
+  adaptive_icon_foreground: assets/icon512x512.png
+  image_path: assets/icon512x512.png

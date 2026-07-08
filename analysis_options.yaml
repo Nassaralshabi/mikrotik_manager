@@ -1,57 +1,35 @@
-# ============================================================
-#  Analysis Options — محسّن لمشاريع Flutter + Riverpod
-#  القواعد:
-#  - flutter_lints + rules إضافية للأداء والنظافة
-#  - exclude لملفات الـ code generation
-#  - riverpod_lint لقواعد Riverpod
-# ============================================================
+# This file configures the analyzer, which statically analyzes Dart code to
+# check for errors, warnings, and lints.
+#
+# The issues identified by the analyzer are surfaced in the UI of Dart-enabled
+# IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
+# invoked from the command line by running `flutter analyze`.
 
+# The following line activates a set of recommended lints for Flutter apps,
+# packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+# Suppress obsolete analyzer source deprecation warning from flutter_lints package
+# This will be resolved in future Flutter updates
 analyzer:
-  errors:
-    invalid_annotation_target: ignore
-    missing_return: error
-    dead_code: warning
-  
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
-    - "**/*.config.dart"
-    - "build/**"
-    - ".dart_tool/**"
 
 linter:
+  # The lint rules applied to this project can be customized in the
+  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
+  # included above or to enable additional rules. A list of all available lints
+  # and their documentation is published at https://dart.dev/lints.
+  #
+  # Instead of disabling a lint rule for the entire project in the
+  # section below, it can also be suppressed for a single line of code
+  # or a specific dart file by using the `// ignore: name_of_lint` and
+  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
+  # producing the lint.
   rules:
-    # === الأداء ===
-    prefer_const_constructors: true
-    prefer_const_declarations: true
-    prefer_const_literals_to_create_immutables: true
-    prefer_final_locals: true
-    prefer_final_fields: true
-    avoid_unnecessary_containers: true
-    avoid_print: false  # مسموح لأن التطبيق يستخدم debugPrint
+    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
+    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 
-    # === النظافة ===
-    prefer_single_quotes: true
-    always_declare_return_types: true
-    avoid_empty_else: true
-    avoid_relative_lib_imports: true
-    no_duplicate_case_values: true
-    sort_child_properties_last: true
-    use_full_hex_values_for_flutter_colors: true
-    unawaited_futures: true  # يحذّر من Future بدون await
-
-    # === null safety ===
-    avoid_init_to_null: true
-    unnecessary_null_checks: true
-    unnecessary_null_comparison: true
-    null_closures: true
-
-    # === collections ===
-    prefer_iterable_whereType: true
-    use_if_null_to_convert_nulls_between_dart_and_json: false
-
-    # === Riverpod-specific (requires riverpod_lint) ===
-    # riverpod_avoid_using_ref: true
-    # riverpod_provider_parameters: true
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options
