@@ -107,9 +107,10 @@ Future<Uint8List> _generatePdfInBackground(Map<String, dynamic> data) async {
           }
 
           // ملء الفراغات المتبقية في الشبكة
+          // ملء الفراغات المتبقية في الشبكة
           int remainingSlots = cardsPerPage - pageCards.length;
           for (var j = 0; j < remainingSlots; j++) {
-            gridChildren.add(pw.SizedBox.shrink());
+            gridChildren.add(pw.SizedBox());
           }
 
           return pw.GridView(
