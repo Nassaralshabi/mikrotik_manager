@@ -741,7 +741,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                     SaveLocation.all,
                   ],
                   defaultLocation: SaveLocation.mikrotikDevice,
-                  mode: SelectionMode.single,
+                  mode: SelectionMode.multi,
                   onChanged: (locations) {
                     _saveLocations = locations;
                   },

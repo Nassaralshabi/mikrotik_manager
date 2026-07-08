@@ -12,6 +12,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../database/app_database.dart' as db;
+import '../../database/daos/cards_dao.dart';
+import 'package:drift/drift.dart';
 
 /// مكان الحفظ المتاح
 enum SaveLocation {
@@ -107,6 +110,20 @@ class CardSaveService {
   CardSaveService._();
   static final CardSaveService instance = CardSaveService._();
 
+  static db.AppDatabase? _database;
+
+  /// يضبط قاعدة البيانات (يُستدعى من main.dart)
+  static void setDatabase(db.AppDatabase database) {
+    _database = database;
+  }
+
+  db.AppDatabase _getDatabase() {
+    if (_database == null) {
+      throw Exception('Database not initialized. Call setDatabase() first.');
+    }
+    return _database!;
+  }
+
   /// يحفظ الكرت حسب المكان المختار
   Future<CardSaveResult> saveCard({
     required CardSaveData card,
@@ -163,10 +180,30 @@ class CardSaveService {
   }
 
   Future<void> _saveToDatabase(CardSaveData card) async {
-    // TODO: Integrate with drift CardsDao via Riverpod
-    // The AppDatabase is initialized in main.dart
-    // For now, this is a placeholder for the feature
-    debugPrint('[CardSaveService] Saving to DB: ${card.username}');
+    final db = _getDatabase();
+
+    // ابحث عن الملف الشخصي (profile) بالاسم
+    int? profileId;
+    if (card.profileName != null && card.profileName!.isNotEmpty) {
+      final profile = await (db.select(db.profiles)
+            ..where((p) => p.name.equals(card.profileName!)))
+          .getSingleOrNull();
+      if (profile != null) {
+        profileId = profile.id;
+      }
+    }
+
+    // إنشاء كرت جديد
+    await db.into(db.cards).insert(
+      db.CardsCompanion.insert(
+        username: card.username,
+        password: Value(card.password),
+        profileId: profileId ?? 0,
+        sharedUsers: Value(card.sharedUsers),
+        createdAt: DateTime.now(),
+      ),
+    );
+    debugPrint('[CardSaveService] Card saved to local DB: ${card.username}');
   }
 
   Future<String> _saveAsPdf(CardSaveData card) async {

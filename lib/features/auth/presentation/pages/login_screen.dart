@@ -35,6 +35,7 @@ import 'package:mikrotik_manager/snackbar_helpers.dart';
 import 'package:mikrotik_manager/core/theme/app_theme.dart';
 import 'package:mikrotik_manager/core/router/custom_page_route.dart';
 import 'package:mikrotik_manager/features/home/presentation/pages/home_screen.dart';
+import 'package:mikrotik_manager/shared/widgets/custom_loading_indicator.dart';
 import 'package:mikrotik_manager/screens/user_manager_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -696,36 +697,5 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 }
 
-class CustomLoadingIndicator extends StatelessWidget {
-  final String? message;
-  const CustomLoadingIndicator({super.key, this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(
-            strokeWidth: 3,
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6b3fa0)),
-          ),
-          if (message != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              message!,
-              style: const TextStyle(
-                color: Color(0xB3FFFFFF),
-                fontSize: 14,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
 
 // --- HomeScreen with new UI ---

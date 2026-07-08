@@ -28,6 +28,9 @@ import 'perf/dio_cache_service.dart';
 import 'ai_diagnostics_screen.dart';
 import 'database/app_database.dart' as db;
 import 'database/sync_service.dart';
+import 'core/services/card_save_service.dart';
+import 'database/database_provider.dart';
+import 'database/migration_service.dart';
 import 'monthly_report_screen.dart';
 import 'card_search_screen.dart';
 import 'ai/diagnostics_history.dart';
@@ -53,9 +56,16 @@ void main() async {
   appDatabase = db.AppDatabase();
   DiagnosticsHistoryService.instance.setDao(appDatabase.aiDiagnosticsDao);
   SyncService.setDatabase(appDatabase);
+  CardSaveService.setDatabase(appDatabase);
+  setAppDatabase(appDatabase);
+  
+  // تشغيل الترحيل في الخلفية (لا يمنع التطبيق)
+  MigrationService.instance.migrateIfNeeded(appDatabase).catchError((e) {
+    debugPrint('[main] Migration error: $e');
+  });
 
   runApp(
-    ChangeNotifierProvider(
+    ChangeNotifierProvider<MqttService>(
       create: (_) => MqttService(scaffoldMessengerKey: scaffoldMessengerKey),
       child: const MyApp(),
     ),

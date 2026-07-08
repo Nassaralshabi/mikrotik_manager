@@ -1,5 +1,6 @@
 // ============================================================
 //  Database Providers — Riverpod providers للوصول للـ database
+//  يستخدم قاعدة بيانات واحدة (مُهيّأة في main.dart)
 // ============================================================
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,23 +9,28 @@ import 'daos/cards_dao.dart';
 import 'daos/profiles_dao.dart';
 import 'daos/ai_diagnostics_dao.dart';
 import 'daos/executed_commands_dao.dart';
-import 'migration_service.dart';
+
+/// مرجع لقاعدة البيانات المُهيّأة في main.dart
+/// يتم تعيينه عبر [setAppDatabase] قبل استخدام أي Provider
+AppDatabase? _appDatabase;
+
+/// يعيّن قاعدة البيانات (يُستدعى من main.dart بعد تهيئة AppDatabase)
+/// هذا يضمن وجود اتصال واحد فقط بقاعدة البيانات
+void setAppDatabase(AppDatabase db) {
+  _appDatabase = db;
+}
+
+/// يرجع قاعدة البيانات المُهيّأة
+AppDatabase _getDb() {
+  final db = _appDatabase;
+  assert(db != null, 'AppDatabase must be initialized before using Riverpod providers. '
+      'Call setAppDatabase(db) in main.dart.');
+  return db!;
+}
 
 /// Singleton للـ database (يبقى حياً طوال عمر التطبيق)
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
-  final db = AppDatabase();
-
-  // نفّذ الترحيل عند أول استخدام (في الخلفية)
-  ref.onDispose(() {
-    db.close();
-  });
-
-  // ابدأ الترحيل في الخلفية (لا ننتظره)
-  MigrationService.instance.migrateIfNeeded(db).catchError((e) {
-    // خطأ الترحيل لا يمنع استخدام الـ app
-  });
-
-  return db;
+  return _getDb();
 });
 
 /// Provider لـ CardsDao
