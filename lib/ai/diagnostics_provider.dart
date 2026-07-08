@@ -13,6 +13,7 @@ import 'ai_service.dart';
 import 'ai_settings_service.dart';
 import 'command_executor.dart';
 import 'diagnostics_history.dart';
+import '../core/secure_credentials.dart';
 
 // ============================================================
 //  Providers أساسية
@@ -250,18 +251,20 @@ class DiagnosticsNotifier extends StateNotifier<DiagnosticsState> {
       MikrotikSnapshot snapshot;
 
       if (settings.connectionMethod == MikrotikConnectionMethod.ssh) {
-        // SSH: نحتاج بيانات اعتماد من SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        final ip = prefs.getString('ip') ?? '';
-        final user = prefs.getString('user') ?? '';
-        final pass = prefs.getString('pass') ?? '';
+        // SSH: بيانات اعتماد من SecureCredentials (مخزّنة مشفّرة)
+        final creds = await SecureCredentials.instance.loadMikrotikCreds();
+        if (creds.ip.isEmpty) {
+          throw Exception('بيانات اعتماد MikroTik غير موجودة. سجّل الدخول أولاً.');
+        }
         snapshot = await MikrotikDataCollector.collectViaSSH(
-          host: ip,
-          username: user,
-          password: pass,
+          host: creds.ip,
+          username: creds.user,
+          password: creds.pass,
+          port: creds.sshPort,
         );
       } else {
-        // RouterOS API
+        // RouterOS API — عبر MikrotikConnector (الاتصال المُخزّن)
+        // ملاحظة: عند اكتمال الترحيل سيُستبدل بـ MikrotikRepository
         snapshot = await MikrotikDataCollector.collectViaRouterOS();
       }
 

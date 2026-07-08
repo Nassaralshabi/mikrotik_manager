@@ -72,7 +72,7 @@ class MikrotikRepository implements IMikrotikRepository {
   RouterOSClient? _client;
   DateTime? _lastUsed;
   static const _maxIdle = Duration(minutes: 3);
-  static const _connectTimeout = Duration(seconds: 5);
+  static const _connectTimeout = Duration(seconds: 15);
   bool _isConnecting = false;
 
   // ============================================================

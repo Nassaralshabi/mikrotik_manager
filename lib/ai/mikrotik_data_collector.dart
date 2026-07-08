@@ -28,7 +28,7 @@ class MikrotikDataCollector {
     required String username,
     required String password,
     int port = 22,
-    Duration timeout = const Duration(seconds: 15),
+    Duration timeout = const Duration(seconds: 30),
   }) async {
     SSHClient? client;
     SSHSocket? socket;
@@ -94,7 +94,7 @@ class MikrotikDataCollector {
   /// يستخدم SharedPreferences للحصول على بيانات الاعتماد المخزّنة
   static Future<MikrotikSnapshot> collectViaRouterOS({
     RouterOSClient? client,
-    Duration timeout = const Duration(seconds: 15),
+    Duration timeout = const Duration(seconds: 30),
   }) async {
     RouterOSClient? internalClient = client;
     bool createdInternally = false;
@@ -183,7 +183,7 @@ class MikrotikDataCollector {
     List<String> args,
   ) async {
     try {
-      final res = await client.talk(args).timeout(const Duration(seconds: 10));
+      final res = await client.talk(args).timeout(const Duration(seconds: 30));
       return res.map((e) => Map<String, dynamic>.from(e)).toList();
     } catch (e) {
       debugPrint('[MikrotikDataCollector] talk error for $args: $e');

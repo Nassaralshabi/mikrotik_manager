@@ -29,7 +29,7 @@ class MikrotikConnector {
   static String? _currentUser;
   static int _currentPort = 8728;
   static const _maxIdle = Duration(minutes: 3);
-  static const _connectTimeout = Duration(seconds: 5);
+  static const _connectTimeout = Duration(seconds: 15);
   static bool _isConnecting = false;
 
   /// معلومات الاتصال الحالي (للاستخدام في UI والتشخيص)
