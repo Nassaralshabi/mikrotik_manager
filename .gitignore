@@ -1,37 +1,19 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
 /build/
+/coverage/
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
 
 # Symbolication related
 app.*.symbols
@@ -39,22 +21,134 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# IDEs - VSCode
+.vscode/
+*.code-workspace
+.history/
+*.swp
 
-# AI API keys — لا ترفع ملف .env أبداً
+# IDEs - IntelliJ/Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+misc.xml
+deploymentTargetDropDown.xml
+render.experimental.xml
+
+# IDEs - Sublime Text
+*.sublime-workspace
+
+# IDEs - Vim
+*.suo
+*.swp
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+# Environment/Local files
 .env
 .env.local
-.env.production
+.env.*.local
+*.pem
+*.key
+*.cer
+*.cert
+*.credentials
+secrets/
+*.secret
+*.lock
+
+# Local storage and cache
+local_storage.json
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+*.gr.dart
+
+# Testing
+.test_coverage.dart
+.test.cache
+
+# Logs
+*.log
+logs/
+
+# Claude Code
+.claude/
+auto memory.md
+
+# Project specific
+/model-clone
+all progress.md
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# OS generated files
+*.pid
+*.seed
+*.pid.bak
+
+# Flutter build outputs
+*.apk
+*.aab
+*.ipa
+*.app
+*.dSYM.zip
+*.msv
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+firestore.rules
+firestore.indexes.json
+
+contoh_login.webp
 
 # ============================================================
-#  Signing / Keystore — أسرار التوقيع (لا تُرفع أبداً)
-#  تُدار عبر GitHub Secrets في CI
+#  Signing / Keystore — never commit (managed via GitHub Secrets)
 # ============================================================
 /android/app/keystore/
 /android/key.properties
 *.jks
 *.keystore
 key.properties
+
+# Uncomment to include specific VSCode configurations
+# /.vscode/settings.json
+# /.vscode/tasks.json
+# /.vscode/launch.json
+# /.vscode/extensions.json
+android/.kotlin/

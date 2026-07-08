@@ -1,83 +1,92 @@
-// main.dart
-
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'providers/app_providers.dart';
+import 'services/cache_service.dart';
+import 'services/log_service.dart';
+import 'services/search_service.dart';
+import 'services/theme_service.dart';
+import 'l10n/locale_provider.dart';
+import 'l10n/app_localizations_delegate.dart';
+import 'services/ad_service.dart';
 
-import 'v2/providers/mqtt_provider.dart';
-import 'perf/device_capability.dart';
-import 'database/app_database.dart' as db;
-import 'database/sync_service.dart';
-import 'core/services/card_save_service.dart';
-import 'database/database_provider.dart';
-import 'database/migration_service.dart';
-import 'ai/diagnostics_history.dart';
-import 'core/theme/app_theme.dart';
-import 'core/router/app_router.dart';
-
-/// قاعدة البيانات العامة (Singleton — تُستخدم عبر كل التطبيق)
-late final db.AppDatabase appDatabase;
-
-/// إقلاع محسّن:
-/// 1) تهيئة قدرة الجهاز (low/mid/high) قبل runApp
-/// 2) تهيئة قاعدة بيانات SQLite (drift)
-/// 3) تمرير MqttService عبر Provider كالمعتاد
 void main() async {
-  // تهيئة Flutter binding (مطلوبة لـ SharedPreferences و path_provider)
   WidgetsFlutterBinding.ensureInitialized();
 
-  await DeviceCapability.instance.init();
+  // Initialize Hive for local caching
+  await Hive.initFlutter();
 
-  // تهيئة قاعدة البيانات
-  appDatabase = db.AppDatabase();
-  DiagnosticsHistoryService.instance.setDao(appDatabase.aiDiagnosticsDao);
-  SyncService.setDatabase(appDatabase);
-  CardSaveService.setDatabase(appDatabase);
-  setAppDatabase(appDatabase);
-  
-  // تشغيل الترحيل في الخلفية (لا يمنع التطبيق)
-  MigrationService.instance.migrateIfNeeded(appDatabase).catchError((e) {
-    debugPrint('[main] Migration error: $e');
-  });
+  // Initialize cache service
+  await CacheService().init();
 
+  // Initialize log service for activity logging
+  await LogService.init();
+
+  // Initialize search service for recent searches
+  await SearchService.init();
+
+  // Initialize mobile ads
+  await AdService().init();
+
+  // Pre-load theme for instant display (no flash)
+  final preloadedTheme = await ThemeService.loadThemeMode();
+
+  // Pre-load locale
+  final preloadedLocale = await LocaleService.loadLocale();
+
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   runApp(
     ProviderScope(
       overrides: [
-        // تمرير scaffoldMessengerKey إلى MqttService عبر Riverpod
-        scaffoldMessengerKeyProvider.overrideWithValue(scaffoldMessengerKey),
+        themeModeProvider
+            .overrideWith((ref) => ThemeModeNotifier.preloaded(preloadedTheme)),
+        localeProvider
+            .overrideWith((ref) => LocaleNotifier.preloaded(preloadedLocale)),
       ],
-      child: const MyApp(),
+      child: const OmmonApp(),
     ),
   );
 }
 
-// A global key for the ScaffoldMessenger
-final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
-
-/* snackbar helpers moved to snackbar_helpers.dart */
-// showErrorSnackBar — موجودة في snackbar_helpers.dart
-
-// showSuccessSnackBar — موجودة في snackbar_helpers.dart
-
-class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
+class OmmonApp extends ConsumerWidget {
+  const OmmonApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
+    final locale = ref.watch(localeProvider);
+
     return MaterialApp.router(
-      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
-      title: 'MikroTik Manager',
-      theme: AppTheme.darkTheme,
+      title: 'ΩMMON - Open Mikrotik Monitor',
+      theme: ThemeService.getThemeData(themeMode),
       routerConfig: router,
+      locale: locale,
+      supportedLocales: LocaleService.supportedLocales,
+      localizationsDelegates: [
+        AppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      localeResolutionCallback: (deviceLocale, supportedLocales) {
+        return locale;
+      },
+      builder: (context, child) {
+        // Force RTL layout for Arabic
+        return Directionality(
+          textDirection: locale.languageCode == 'ar'
+              ? TextDirection.rtl
+              : TextDirection.ltr,
+          child: child!,
+        );
+      },
     );
   }
 }
-
-// صفحة انتقال مخصصة مع animation — محسّنة للأجهزة الضعيفة
-// CustomPageRoute مستخرج إلى core/router/custom_page_route.dart
-
-// LoginScreen — مستخرج إلى features/auth/presentation/pages/login_screen.dart
-// CustomLoadingIndicator — مستخرج إلى shared/widgets/custom_loading_indicator.dart
-
