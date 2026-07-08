@@ -1,43 +1,20 @@
 // main.dart
 
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:network_info_plus/network_info_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
-import 'package:router_os_client/router_os_client.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-// --- افترض أن هذه الملفات موجودة في مشروعك ---
-import 'add_user_screen.dart';
-import 'bulk_add_screen.dart';
-import 'saved_files_screen.dart';
 import 'mqtt_service.dart';
-import 'qahtani_link_screen.dart';
-import 'profile_screen.dart';
-import 'pdf_templates_screen.dart';
-import 'network_doctor_screen.dart';
-import 'extract_cards_screen.dart';
-import 'cards_statistics_screen.dart';
-import 'stats_screen.dart';
-import 'mikrotik_connector.dart';
-import 'backup_system_screen.dart';
-import 'active_users_screen.dart';
 import 'perf/device_capability.dart';
-import 'perf/dio_cache_service.dart';
-import 'ai_diagnostics_screen.dart';
 import 'database/app_database.dart' as db;
 import 'database/sync_service.dart';
 import 'core/services/card_save_service.dart';
 import 'database/database_provider.dart';
 import 'database/migration_service.dart';
-import 'monthly_report_screen.dart';
-import 'card_search_screen.dart';
 import 'ai/diagnostics_history.dart';
 import 'core/theme/app_theme.dart';
-import 'features/home/presentation/pages/home_screen.dart';
-import 'features/auth/presentation/pages/login_screen.dart';
-// -----------------------------------------
+import 'core/router/app_router.dart';
 
 /// قاعدة البيانات العامة (Singleton — تُستخدم عبر كل التطبيق)
 late final db.AppDatabase appDatabase;
@@ -65,9 +42,11 @@ void main() async {
   });
 
   runApp(
-    ChangeNotifierProvider<MqttService>(
-      create: (_) => MqttService(scaffoldMessengerKey: scaffoldMessengerKey),
-      child: const MyApp(),
+    ProviderScope(
+      child: ChangeNotifierProvider<MqttService>(
+        create: (_) => MqttService(scaffoldMessengerKey: scaffoldMessengerKey),
+        child: const MyApp(),
+      ),
     ),
   );
 }
@@ -80,17 +59,18 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<Scaffol
 
 // showSuccessSnackBar — موجودة في snackbar_helpers.dart
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    return MaterialApp.router(
       scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       title: 'MikroTik Manager',
       theme: AppTheme.darkTheme,
-      home: const LoginScreen(),
+      routerConfig: router,
     );
   }
 }

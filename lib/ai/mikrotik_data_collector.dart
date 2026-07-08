@@ -13,6 +13,7 @@ import 'package:router_os_client/router_os_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../mikrotik_connector.dart';
+import '../core/mikrotik_repository.dart';
 import 'diagnostics_models.dart';
 
 class MikrotikDataCollector {
@@ -102,6 +103,31 @@ class MikrotikDataCollector {
     try {
       if (internalClient == null) {
         // استخدم الاتصال المُخزّن من MikrotikConnector أولاً
+        try {
+          // جرب MikrotikRepository أولاً إن وُجد
+          if (repository != null) {
+            debugPrint('[MikrotikDataCollector] Using MikrotikRepository');
+            // نجمع البيانات من خلال الـ repository
+            final resourceResult = await repository.talk(['/system/resource/print']);
+            final ifaceResult = await repository.talk(['/interface/print', '=.proplist=name,type,running,mac-address,mtu,rx-byte,tx-byte']);
+            final routeResult = await repository.talk(['/ip/route/print', '=.proplist=dst-address,gateway,distance,active']);
+            final fwResult = await repository.talk(['/ip/firewall/filter/print', '=.proplist=chain,action,protocol,src-address,dst-address,comment']);
+            final logResult = await repository.talk(['/log/print']);
+
+            return MikrotikSnapshot(
+              system: _formatMapList(resourceResult),
+              interfaces: _formatMapList(ifaceResult),
+              routes: _formatMapList(routeResult),
+              firewall: _formatMapList(fwResult),
+              logs: _formatMapList(logResult),
+              ipAddress: repository.isConnected ? 'connected' : 'unknown',
+              collectedAt: DateTime.now(),
+            );
+          }
+        } catch (e) {
+          debugPrint('[MikrotikDataCollector] Repository failed, falling back to connector: $e');
+        }
+
         try {
           internalClient = await MikrotikConnector.connect();
           debugPrint('[MikrotikDataCollector] Reusing cached connection');

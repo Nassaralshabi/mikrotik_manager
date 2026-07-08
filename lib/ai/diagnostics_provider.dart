@@ -14,6 +14,7 @@ import 'ai_settings_service.dart';
 import 'command_executor.dart';
 import 'diagnostics_history.dart';
 import '../core/secure_credentials.dart';
+import '../core/mikrotik_repository.dart';
 
 // ============================================================
 //  Providers أساسية
@@ -263,9 +264,16 @@ class DiagnosticsNotifier extends StateNotifier<DiagnosticsState> {
           port: creds.sshPort,
         );
       } else {
-        // RouterOS API — عبر MikrotikConnector (الاتصال المُخزّن)
-        // ملاحظة: عند اكتمال الترحيل سيُستبدل بـ MikrotikRepository
-        snapshot = await MikrotikDataCollector.collectViaRouterOS();
+        // RouterOS API — جرب MikrotikRepository أولاً
+        IMikrotikRepository? repo;
+        try {
+          repo = _ref.read(mikrotikRepositoryProvider);
+        } catch (_) {
+          repo = null;
+        }
+        snapshot = await MikrotikDataCollector.collectViaRouterOS(
+          repository: repo,
+        );
       }
 
       state = state.copyWith(
