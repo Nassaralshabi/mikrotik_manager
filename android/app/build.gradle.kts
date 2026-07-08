@@ -1,5 +1,7 @@
 import java.util.Properties
 import java.io.FileInputStream
+import java.io.File
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -34,8 +36,13 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+    // Note: kotlinOptions { jvmTarget = ... } is deprecated in Kotlin 2.x.
+    // Use the new compilerOptions DSL instead. The JvmTarget enum is imported above.
+    // This avoids the deprecation warning that was breaking CI compilation.
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
     }
 
     defaultConfig {
@@ -45,8 +52,13 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // Keep only Arabic + English resources
-        resourceConfigurations += listOf("ar", "en")
+        // Keep only Arabic + English resources.
+        // resourceConfigurations is deprecated; use androidResources.localeFilters instead.
+        // (see https://developer.android.com/build/manage-manifests)
+    }
+
+    androidResources {
+        localeFilters += listOf("ar", "en")
     }
 
     signingConfigs {
@@ -55,7 +67,7 @@ android {
                 // CI: env vars come from GitHub Secrets.
                 // KEYSTORE_PATH is relative to repo root, so use rootProject.projectDir.parentFile
                 val repoRoot = rootProject.projectDir.parentFile
-                storeFile = java.io.File(repoRoot, System.getenv("KEYSTORE_PATH"))
+                storeFile = File(repoRoot, System.getenv("KEYSTORE_PATH"))
                 storePassword = System.getenv("KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("KEY_ALIAS")
                 keyPassword = System.getenv("KEY_PASSWORD")
