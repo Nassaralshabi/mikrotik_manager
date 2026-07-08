@@ -35,6 +35,7 @@ import 'package:mikrotik_manager/snackbar_helpers.dart';
 import 'package:mikrotik_manager/core/theme/app_theme.dart';
 import 'package:mikrotik_manager/core/router/custom_page_route.dart';
 import 'package:mikrotik_manager/features/home/presentation/pages/home_screen.dart';
+import 'package:mikrotik_manager/screens/user_manager_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -510,6 +511,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
               : const Text('اتصال', style: TextStyle(fontSize: 18)),
         ),
+        const SizedBox(height: 12),
+        // ============================================================
+        //  دخول مباشر لشاشة User Manager (عن بُعد) — بدون الحاجة للاتصال المحلي
+        //  يسمح باستخدام التطبيق لإنشاء كروت على User Manager بعيداً
+        //  دون تسجيل دخول محلي على MikroTik.
+        // ============================================================
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF6A1B9A),
+            side: const BorderSide(color: Color(0xFF6A1B9A), width: 1.5),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          icon: const Icon(Icons.cloud_done_outlined),
+          label: const Text('دخول User Manager عن بُعد', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          onPressed: () {
+            Navigator.of(context).push(
+              CustomPageRoute(builder: (context) => const UserManagerScreen()),
+            );
+          },
+        ),
         const SizedBox(height: 8),
         TextButton(
           onPressed: _launchPrivacyPolicy,
@@ -599,6 +621,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                 )
               : const Text('الدخول', style: TextStyle(fontSize: 18)),
+        ),
+        const SizedBox(height: 12),
+        // ============================================================
+        //  دخول مباشر لشاشة User Manager (عن بُعد) — بدون الحاجة للاتصال المحلي
+        //  يسمح باستخدام التطبيق لإنشاء كروت على User Manager بعيداً
+        //  دون تسجيل دخول محلي على MikroTik.
+        // ============================================================
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF6A1B9A),
+            side: const BorderSide(color: Color(0xFF6A1B9A), width: 1.5),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          icon: const Icon(Icons.cloud_done_outlined),
+          label: const Text('دخول User Manager عن بُعد', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          onPressed: () {
+            Navigator.of(context).push(
+              CustomPageRoute(builder: (context) => const UserManagerScreen()),
+            );
+          },
         ),
         const SizedBox(height: 16),
         const Text(
