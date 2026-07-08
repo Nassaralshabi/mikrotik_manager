@@ -1,58 +1,90 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    id("kotlin-android")
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file("local.properties")
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader("UTF-8") { reader ->
-        localProperties.load(reader)
-    }
+// ============================================================
+//  Signing — reads from either CI env vars or local key.properties
+//  Priority:
+//   1) CI env vars: KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+//   2) Local file: android/key.properties
+//   3) Fallback: debug signing
+// ============================================================
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
-def flutterVersionCode = localProperties.getProperty("flutter.versionCode")
-if (flutterVersionCode == null) {
-    flutterVersionCode = "1"
-}
-
-def flutterVersionName = localProperties.getProperty("flutter.versionName")
-if (flutterVersionName == null) {
-    flutterVersionName = "1.0"
-}
+val isCiSigning = System.getenv("KEYSTORE_PATH")?.isNotEmpty() == true
+val hasKeyProperties = keystoreProperties.getProperty("storeFile") != null
 
 android {
-    namespace = "com.example.mikrotik_manager"
-    
-    // ==================== الإصلاحات النهائية هنا ====================
-    compileSdk = 36
-    // ==========================================================
+    namespace = "com.simpurrapps.ommon"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = "27.2.12479018"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
-    }
-
-    sourceSets {
-        getByName("main").java.srcDirs("src/main/kotlin")
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
-        applicationId = "com.example.mikrotik_manager"
-        minSdk = 21
-        targetSdk = 36 // <-- يجب أن يطابق compileSdk
-        versionCode = flutterVersionCode.toInt()
-        versionName = flutterVersionName
+        applicationId = "com.simpurrapps.ommon"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+
+        // Keep only Arabic + English resources
+        resourceConfigurations += listOf("ar", "en")
+    }
+
+    signingConfigs {
+        create("release") {
+            if (isCiSigning) {
+                // CI: env vars come from GitHub Secrets.
+                // KEYSTORE_PATH is relative to repo root, so use rootProject.projectDir.parentFile
+                val repoRoot = rootProject.projectDir.parentFile
+                storeFile = java.io.File(repoRoot, System.getenv("KEYSTORE_PATH"))
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            } else if (hasKeyProperties) {
+                // Local: from android/key.properties
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storePassword = keystoreProperties.getProperty("storePassword")
+                val keystoreFile = keystoreProperties.getProperty("storeFile")
+                if (keystoreFile != null) {
+                    storeFile = file(keystoreFile)
+                }
+            }
+        }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            // Use release signing if available, else debug
+            signingConfig = if (isCiSigning || hasKeyProperties) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+
+            // Enable code shrinking and obfuscation
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
@@ -60,5 +92,3 @@ android {
 flutter {
     source = "../.."
 }
-
-dependencies {}

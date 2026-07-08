@@ -1,20 +1,30 @@
-name: Build Android APK & AAB on PR
+name: Build Flutter Release APK
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  push:
     branches:
-      - '**'
+      - main
+      - master
+      - 'improvements/**'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
 
-permissions:
-  contents: read
+# ============================================================
+#  GitHub Secrets for signing (optional):
+#   - KEYSTORE_BASE64: base64 of the .jks file
+#   - KEYSTORE_PASSWORD: keystore password
+#   - KEY_ALIAS: key alias (e.g., mikrotik-release)
+#   - KEY_PASSWORD: key password
+#  If not set, APK will be built with debug signing.
+# ============================================================
 
 jobs:
   build-apk:
-    name: Build release APK
     runs-on: ubuntu-latest
-    env:
-      ARTIFACT_NAME: mikrotik-manager-apk-pr-${{ github.event.pull_request.number }}-${{ github.sha }}
+    timeout-minutes: 45
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,63 +34,100 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: 'gradle'
+          cache: gradle
 
-      - name: Set up Flutter 3.22 (stable)
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          flutter-version: '3.22.3'
+          channel: stable
+          flutter-version: '3.35.7'
           cache: true
 
-      - name: Show Flutter version
+      - name: Verify Flutter version
         run: flutter --version
 
-      - name: Cache pub packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
+      # ============================================================
+      #  Decode keystore from secrets (if set)
+      #  NOTE: env: block is evaluated BEFORE if: at step level,
+      #  so env.KEYSTORE_BASE64 is visible in the if: condition.
+      #  Bare 'secrets.X' (without != '') is NOT a valid boolean
+      #  expression and causes the workflow to fail with 0 jobs.
+      # ============================================================
+      - name: Decode keystore from secrets
+        id: decode-keystore
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p android/app/keystore
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore/release.jks
+          echo "Keystore decoded successfully:"
+          ls -lh android/app/keystore/release.jks
+          echo "Absolute path: $(pwd)/android/app/keystore/release.jks"
+          file android/app/keystore/release.jks || true
+          echo "decoded=true" >> $GITHUB_OUTPUT
 
-      - name: Install Flutter dependencies
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Clean previous builds
-        run: flutter clean
+      - name: Analyze code (non-blocking)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        continue-on-error: true
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
+        continue-on-error: true
 
-      - name: Build release AAB (Android App Bundle)
-        run: flutter build appbundle --release
+      # ============================================================
+      #  Build release APK (arm64 only — smaller size)
+      # ============================================================
+      - name: Build optimized release APK (arm64)
+        env:
+          KEYSTORE_PATH: ${{ steps.decode-keystore.outputs.decoded == 'true' && 'android/app/keystore/release.jks' || '' }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          flutter build apk --release \
+            --target-platform android-arm64 \
+            --split-per-abi \
+            --tree-shake-icons
+
+      - name: Show APK size breakdown
+        run: |
+          echo "=== APK Files ==="
+          ls -lh build/app/outputs/flutter-apk/*.apk
+          echo ""
+          echo "=== Total APK size ==="
+          du -sh build/app/outputs/flutter-apk/
 
       - name: Upload release APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: mikrotik-manager-release-apk-arm64-${{ github.sha }}
+          path: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload release AAB artifact
+      - name: Generate size report
+        run: |
+          echo "## APK Size Report" > size_report.md
+          echo "" >> size_report.md
+          echo "| File | Size |" >> size_report.md
+          echo "|------|------|" >> size_report.md
+          for apk in build/app/outputs/flutter-apk/*.apk; do
+            name=$(basename "$apk")
+            size=$(du -h "$apk" | cut -f1)
+            echo "| $name | $size |" >> size_report.md
+          done
+          echo "" >> size_report.md
+          echo "Built with: arm64-v8a only, R8 minify, resource shrinking" >> size_report.md
+          cat size_report.md
+
+      - name: Upload size report
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}-aab
-          path: build/app/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
+          name: apk-size-report-${{ github.sha }}
+          path: size_report.md
           retention-days: 30
-
-      - name: Add build summary
-        run: |
-          echo "✅ Android Build succeeded for PR #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📱 **Artifacts Generated:**" >> $GITHUB_STEP_SUMMARY
-          echo "- APK: ${{ env.ARTIFACT_NAME }}-apk" >> $GITHUB_STEP_SUMMARY
-          echo "- AAB: ${{ env.ARTIFACT_NAME }}-aab" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📁 **File Paths:**" >> $GITHUB_STEP_SUMMARY
-          echo "- APK: build/app/outputs/flutter-apk/app-release.apk" >> $GITHUB_STEP_SUMMARY
-          echo "- AAB: build/app/outputs/bundle/release/app-release.aab" >> $GITHUB_STEP_SUMMARY
