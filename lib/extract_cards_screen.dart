@@ -5,12 +5,12 @@ import 'snackbar_helpers.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_document_scanner/google_mlkit_document_scanner.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'dart:io';
 import 'process_image_screen.dart';
 import 'mqtt_service.dart';
+import 'v2/providers/mqtt_provider.dart';
 
 import 'perf/device_capability.dart';
 
@@ -58,7 +58,7 @@ class _ExtractCardsScreenState extends State<ExtractCardsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _mqttService = Provider.of<MqttService>(context, listen: false);
+    _mqttService = context.read(mqttServiceProvider);
     _setupMqttListener();
   }
 

@@ -1,102 +1,50 @@
 // ============================================================
 //  MQTT Riverpod Provider — بديل ChangeNotifierProvider القديم
 //
-//  المزايا:
-//  - StreamProvider + autoDispose (ينظف نفسه عند عدم الحاجة)
-//  - يمكن استخدام select() لعزل إعادة البناء
-//  - type-safe
+//  استخدام:
+//    final mqtt = context.read(mqttServiceProvider);
+//    mqtt.configure(username, password);
+//    mqtt.publish(message);
+//
+//  للـ Stream:
+//    final messages = context.watch(mqttMessagesProvider);
+//    messages.whenData((msg) => ...);
 // ============================================================
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../mqtt_service.dart';
+import 'package:flutter/material.dart';
 
-/// State لإدارة اتصال MQTT
-class MqttConnectionState {
-  final bool isConnected;
-  final bool isConnecting;
-  final String? error;
+/// مزوّد لمفتاح ScaffoldMessenger (يُضبط من main.dart)
+final scaffoldMessengerKeyProvider = Provider<GlobalKey<ScaffoldMessengerState>>((ref) {
+  throw UnimplementedError('يجب تعيين scaffoldMessengerKeyProvider في main.dart');
+});
 
-  const MqttConnectionState({
-    required this.isConnected,
-    required this.isConnecting,
-    this.error,
-  });
-
-  MqttConnectionState copyWith({
-    bool? isConnected,
-    bool? isConnecting,
-    String? error,
-    bool clearError = false,
-  }) =>
-      MqttConnectionState(
-        isConnected: isConnected ?? this.isConnected,
-        isConnecting: isConnecting ?? this.isConnecting,
-        error: clearError ? null : (error ?? this.error),
-      );
-
-  static const initial = MqttConnectionState(
-    isConnected: false,
-    isConnecting: false,
-  );
-}
-
-/// Provider للـ MqttService نفسه (ليس الـ stream)
+/// Provider للـ MqttService نفسه
+/// يبقى حياً طوال عمر التطبيق (ليس autoDispose)
 final mqttServiceProvider = Provider<MqttService>((ref) {
-  final mqtt = MqttService();
+  // نحاول الحصول على scaffoldMessengerKey (قد لا يكون متاحاً)
+  GlobalKey<ScaffoldMessengerState>? key;
+  try {
+    key = ref.read(scaffoldMessengerKeyProvider);
+  } catch (_) {
+    key = null;
+  }
+  final mqtt = MqttService(scaffoldMessengerKey: key);
   ref.onDispose(() {
     mqtt.dispose();
   });
   return mqtt;
 });
 
-/// Provider لحالة الاتصال
-final mqttConnectionProvider = StateNotifierProvider<MqttConnectionNotifier, MqttConnectionState>((ref) {
-  final mqtt = ref.watch(mqttServiceProvider);
-  return MqttConnectionNotifier(mqtt);
-});
-
-class MqttConnectionNotifier extends StateNotifier<MqttConnectionState> {
-  final MqttService _mqtt;
-
-  MqttConnectionNotifier(this._mqtt) : super(MqttConnectionState.initial);
-
-  void configure(String username, String password) {
-    state = state.copyWith(isConnecting: true, clearError: true);
-    try {
-      _mqtt.configure(username, password);
-      state = state.copyWith(isConnected: true, isConnecting: false);
-    } catch (e) {
-      state = state.copyWith(
-        isConnected: false,
-        isConnecting: false,
-        error: e.toString(),
-      );
-    }
-  }
-
-  void disconnect() {
-    _mqtt.dispose();
-    state = MqttConnectionState.initial;
-  }
-}
-
-/// StreamProvider لرسائل MQTT — هذا هو جوهر التحويل
-/// يستخدم autoDispose لتنظيف الاشتراك عند إغلاق الشاشة
+/// StreamProvider لرسائل MQTT
 final mqttMessagesProvider = StreamProvider.autoDispose<Map<String, dynamic>>((ref) {
   final mqtt = ref.watch(mqttServiceProvider);
-  final stream = mqtt.messages;
-
-  ref.onDispose(() {
-    // الـ Stream سيتوقف تلقائياً عند انتهاء الـ Provider
-  });
-
-  return stream;
+  return mqtt.messages;
 });
 
-/// Provider للإرسال — يستخدم ref.read (لا يُعيد بناء)
-final mqttPublishProvider = Provider<Future<void> Function(Map<String, dynamic>)>((ref) {
+/// Provider للإرسال
+final mqttPublishProvider = Provider<void Function(Map<String, dynamic>)>((ref) {
   final mqtt = ref.watch(mqttServiceProvider);
-  return (message) async {
-    mqtt.publish(message);
-  };
+  return (message) => mqtt.publish(message);
 });

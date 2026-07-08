@@ -7,7 +7,6 @@ import 'dart:isolate';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
@@ -17,6 +16,7 @@ import 'bulk_add_isolate.dart';
 import 'saved_files_screen.dart';
 import 'card_list_screen.dart';
 import 'mqtt_service.dart';
+import 'v2/providers/mqtt_provider.dart';
 import 'pdf_templates_screen.dart';
 import 'pdf_generator.dart';
 import 'snackbar_helpers.dart';
@@ -84,7 +84,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _mqttService = Provider.of<MqttService>(context, listen: false);
+    _mqttService = context.read(mqttServiceProvider);
     _setupMqttListener();
   }
 

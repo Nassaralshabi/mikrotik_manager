@@ -5,10 +5,10 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'mqtt_service.dart';
+import 'v2/providers/mqtt_provider.dart';
 import 'snackbar_helpers.dart';
 
 import 'perf/perf_widgets.dart';
@@ -40,7 +40,7 @@ class _CardListScreenState extends State<CardListScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _mqttService = Provider.of<MqttService>(context, listen: false);
+    _mqttService = context.read(mqttServiceProvider);
     _setupMqttListener();
   }
 

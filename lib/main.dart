@@ -3,9 +3,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart';
 
-import 'mqtt_service.dart';
+import 'v2/providers/mqtt_provider.dart';
 import 'perf/device_capability.dart';
 import 'database/app_database.dart' as db;
 import 'database/sync_service.dart';
@@ -43,10 +42,11 @@ void main() async {
 
   runApp(
     ProviderScope(
-      child: ChangeNotifierProvider<MqttService>(
-        create: (_) => MqttService(scaffoldMessengerKey: scaffoldMessengerKey),
-        child: const MyApp(),
-      ),
+      overrides: [
+        // تمرير scaffoldMessengerKey إلى MqttService عبر Riverpod
+        scaffoldMessengerKeyProvider.overrideWithValue(scaffoldMessengerKey),
+      ],
+      child: const MyApp(),
     ),
   );
 }

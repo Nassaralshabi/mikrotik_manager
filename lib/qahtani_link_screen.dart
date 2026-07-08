@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'mqtt_service.dart';
+import 'v2/providers/mqtt_provider.dart';
 import 'perf/device_capability.dart';
 
 class QahtaniLinkScreen extends StatefulWidget {
@@ -48,7 +48,7 @@ class _QahtaniLinkScreenState extends State<QahtaniLinkScreen> {
     super.didChangeDependencies();
     if (_initialized) return;
     _initialized = true;
-    _mqttService = Provider.of<MqttService>(context, listen: false);
+    _mqttService = context.read(mqttServiceProvider);
     _setupMqttListener();
     _loadInitialData();
   }

@@ -7,13 +7,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:network_info_plus/network_info_plus.dart';
-import 'package:provider/provider.dart';
 import 'package:router_os_client/router_os_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mikrotik_manager/add_user_screen.dart';
 import 'package:mikrotik_manager/bulk_add_screen.dart';
 import 'package:mikrotik_manager/saved_files_screen.dart';
 import 'package:mikrotik_manager/mqtt_service.dart';
+import 'package:mikrotik_manager/v2/providers/mqtt_provider.dart';
 import 'package:mikrotik_manager/qahtani_link_screen.dart';
 import 'package:mikrotik_manager/profile_screen.dart';
 import 'package:mikrotik_manager/pdf_templates_screen.dart';
@@ -168,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         _mqttPasswordController.text = mqttPassword;
       });
       if (mounted) {
-        context.read<MqttService>().configure(mqttUsername, mqttPassword);
+        context.read(mqttServiceProvider).configure(mqttUsername, mqttPassword);
       }
     }
   }
@@ -197,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       }
       await Future.wait(futures);
       if (mounted && _mqttUsernameController.text.isNotEmpty) {
-        context.read<MqttService>().configure(
+        context.read(mqttServiceProvider).configure(
           _mqttUsernameController.text.trim(),
           _mqttPasswordController.text.trim(),
         );
