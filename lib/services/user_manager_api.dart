@@ -81,8 +81,8 @@ class UserManagerApi {
   UserManagerApi({required String baseUrl}) : _baseUrl = baseUrl {
     _dio = Dio(BaseOptions(
       baseUrl: _normalize(baseUrl),
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 60),
       followRedirects: true,
       // User Manager قد يستخدم شهادة self-signed على HTTPS
       validateStatus: (s) => s != null && s < 500,
@@ -411,8 +411,8 @@ class UserManagerApi {
   static Future<bool> testConnection(String baseUrl) async {
     try {
       final dio = Dio(BaseOptions(
-        connectTimeout: const Duration(seconds: 8),
-        receiveTimeout: const Duration(seconds: 10),
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
         validateStatus: (s) => s != null && s < 500,
       ));
       final res = await dio.get(baseUrl);
